@@ -1,0 +1,48 @@
+{
+	"name": "tokentally",
+	"version": "0.0.1",
+	"description": "Token usage in, dollar totals out.",
+	"type": "module",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/steipete/tokentally.git"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./node": {
+			"types": "./dist/node/index.d.ts",
+			"import": "./dist/node/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"packageManager": "pnpm@10.25.0",
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepare": "pnpm build",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"format": "biome format --write src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
+		"lint": "biome check src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
+		"lint:fix": "biome check --write src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
+		"test": "vitest run",
+		"test:coverage": "vitest run --coverage",
+		"check": "pnpm lint && pnpm typecheck && pnpm test:coverage"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.10",
+		"@types/node": "^25.0.3",
+		"@vitest/coverage-v8": "^4.0.16",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
+	}
+}
