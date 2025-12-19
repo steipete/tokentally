@@ -1,7 +1,40 @@
+# macOS
 .DS_Store
-node_modules
-dist
-coverage
-.turbo
-.tsbuildinfo
+.AppleDouble
+.LSOverride
 
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Logs
+*.log
+
+# Builds / output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cache
+.turbo/
+.cache/
+.vitest/
+.nyc_output/
+.pnpm-store/
+
+# Env
+.env
+.env.*
+
+# Archives / binaries
+*.tgz
+*.zip
+*.dmg
+*.pkg
+*.app
+*.exe
+*.dll
+*.dylib
