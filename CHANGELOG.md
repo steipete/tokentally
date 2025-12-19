@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 (Unreleased)
+
+- Tooling: bump pnpm to 10.26.1
+- Docs: expand releasing checklist
+
 ## 0.1.0 (2025-12-19)
 
 - Core API: normalize token usage across common provider payload shapes (`normalizeTokenUsage`)

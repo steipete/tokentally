@@ -1,6 +1,6 @@
 {
 	"name": "tokentally",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Token usage in, dollar totals out.",
 	"type": "module",
 	"license": "MIT",
