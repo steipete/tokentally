@@ -107,7 +107,7 @@ export async function loadLiteLlmCatalog({
 	try {
 		const response = await fetchImpl(LITELLM_CATALOG_URL, { headers });
 		if (response.status === 304 && cachedCatalog) {
-			await writeJsonFile(metaPath, { ...(meta ?? {}), fetchedAtMs: nowMs } satisfies CacheMeta);
+			await writeJsonFile(metaPath, { ...meta, fetchedAtMs: nowMs } satisfies CacheMeta);
 			return { catalog: cachedCatalog, source: "cache" };
 		}
 		if (!response.ok) {
