@@ -12,6 +12,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Best-effort normalization of token usage across common provider payloads.
+ *
+ * Accepts `raw` objects containing any of these fields (examples):
+ * - `prompt_tokens`, `completion_tokens`
+ * - `input_tokens`, `output_tokens`
+ * - `inputTokens`, `outputTokens`, `reasoningTokens`
+ *
+ * Returns `null` if no recognized token fields are found.
+ */
 export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
 	if (!isRecord(raw)) return null;
 

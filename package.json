@@ -1,6 +1,6 @@
 {
 	"name": "tokentally",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"description": "Token usage in, dollar totals out.",
 	"type": "module",
 	"license": "MIT",
@@ -20,6 +20,7 @@
 	},
 	"files": [
 		"dist",
+		"CHANGELOG.md",
 		"README.md",
 		"LICENSE"
 	],

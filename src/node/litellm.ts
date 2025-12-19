@@ -18,6 +18,7 @@ type LiteLlmModelRow = {
 	// keep parsing minimal; file contains many additional fields
 };
 
+/** LiteLLM catalog shape: model name → pricing/limits row. */
 export type LiteLlmCatalog = Record<string, LiteLlmModelRow | undefined>;
 
 type CacheMeta = {
@@ -73,11 +74,19 @@ function parseCatalog(raw: unknown): LiteLlmCatalog | null {
 	return raw as LiteLlmCatalog;
 }
 
+/** Result of `loadLiteLlmCatalog()` including the cache/network source. */
 export type LiteLlmLoadResult = {
 	catalog: LiteLlmCatalog | null;
 	source: "cache" | "network" | "none";
 };
 
+/**
+ * Loads the LiteLLM pricing catalog with a small on-disk cache.
+ *
+ * Cache location:
+ * - `$TOKENTALLY_CACHE_DIR` if set
+ * - otherwise: `$HOME/.tokentally/cache`
+ */
 export async function loadLiteLlmCatalog({
 	env,
 	fetchImpl,
@@ -149,6 +158,11 @@ function normalizeCandidateKeys(modelId: string): string[] {
 	return candidates;
 }
 
+/**
+ * Resolves per-token USD pricing from a LiteLLM catalog.
+ *
+ * Skips entries where both prices are `0` (LiteLLM uses `0` for unknown/free in some rows).
+ */
 export function resolveLiteLlmPricing(catalog: LiteLlmCatalog, modelId: string): Pricing | null {
 	const candidates = normalizeCandidateKeys(modelId);
 	for (const key of candidates) {
@@ -185,6 +199,11 @@ function toFinitePositiveInt(value: unknown): number | null {
 	return null;
 }
 
+/**
+ * Resolves max output tokens from a LiteLLM catalog (best-effort).
+ *
+ * Falls back to legacy `max_tokens` when `max_output_tokens` is missing.
+ */
 export function resolveLiteLlmMaxOutputTokens(
 	catalog: LiteLlmCatalog,
 	modelId: string,
@@ -202,6 +221,7 @@ export function resolveLiteLlmMaxOutputTokens(
 	return null;
 }
 
+/** Resolves max input tokens from a LiteLLM catalog (best-effort). */
 export function resolveLiteLlmMaxInputTokens(
 	catalog: LiteLlmCatalog,
 	modelId: string,

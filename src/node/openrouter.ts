@@ -4,6 +4,7 @@ import type { FetchFn } from "./types.js";
 
 const OPENROUTER_MODELS_ENDPOINT = "https://openrouter.ai/api/v1/models";
 
+/** Minimal subset of OpenRouter model info used for pricing + limits. */
 export type OpenRouterModelInfo = {
 	id: string;
 	context_length?: number;
@@ -16,6 +17,11 @@ export type OpenRouterModelInfo = {
 const catalogCache = new Map<string, { fetchedAt: number; models: OpenRouterModelInfo[] }>();
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * Fetches the OpenRouter model catalog (cached in-memory per `apiKey`).
+ *
+ * Note: OpenRouter pricing values are USD per 1M tokens.
+ */
 export async function fetchOpenRouterModelCatalog({
 	apiKey,
 	fetchImpl,
@@ -41,6 +47,11 @@ export async function fetchOpenRouterModelCatalog({
 	return models;
 }
 
+/**
+ * Converts OpenRouter's catalog pricing to a `PricingMap`.
+ *
+ * Entries without pricing are skipped.
+ */
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
 	const map: PricingMap = {};
 	for (const entry of catalog) {
@@ -63,6 +74,11 @@ export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]):
 	return map;
 }
 
+/**
+ * Convenience wrapper: fetch catalog → convert to pricing map.
+ *
+ * Uses the same in-memory TTL as `fetchOpenRouterModelCatalog()`.
+ */
 export async function fetchOpenRouterPricingMap({
 	apiKey,
 	fetchImpl,

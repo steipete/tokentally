@@ -1,4 +1,4 @@
-# tokentally
+# 🧮 tokentally — One tiny lib for LLM token + cost math
 
 Token usage in, dollar totals out.
 
@@ -61,4 +61,3 @@ const pricing = resolvePricingFromMap(map, 'openai/gpt-5.2');
 ## License
 
 MIT
-

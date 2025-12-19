@@ -1,5 +1,10 @@
 import type { CostBreakdown, Pricing, PricingResolver, TokenUsageNormalized } from "./types.js";
 
+/**
+ * Estimates USD cost for a single call from normalized usage + pricing.
+ *
+ * Returns `null` if either `usage` or `pricing` is missing.
+ */
 export function estimateUsdCost({
 	usage,
 	pricing,
@@ -13,11 +18,18 @@ export function estimateUsdCost({
 	return { inputUsd, outputUsd, totalUsd: inputUsd + outputUsd };
 }
 
+/** One model call to be tallied. */
 export type TallyCall = {
 	model: string;
 	usage: TokenUsageNormalized | null;
 };
 
+/**
+ * Aggregated tally output.
+ *
+ * - `total`: sum of all calls where pricing was resolvable
+ * - `byModel`: counts + accumulated usage + (optional) cost per model
+ */
 export type TallyResult = {
 	total: CostBreakdown | null;
 	byModel: Record<
@@ -39,6 +51,11 @@ function emptyUsage(): TokenUsageNormalized {
 	return { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, totalTokens: 0 };
 }
 
+/**
+ * Tallies costs across a list of calls, grouped by `model`.
+ *
+ * `resolvePricing(modelId)` can be async (e.g. catalog fetch).
+ */
 export async function tallyCosts({
 	calls,
 	resolvePricing,

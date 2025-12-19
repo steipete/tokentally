@@ -1,5 +1,10 @@
 import type { Pricing, PricingMap } from "./types.js";
 
+/**
+ * Convenience helper for pricing tables that publish USD per 1M tokens.
+ *
+ * Example: input $1.75 / 1M, output $14.00 / 1M.
+ */
 export function pricingFromUsdPerMillion({
 	inputUsdPerMillion,
 	outputUsdPerMillion,
@@ -19,6 +24,11 @@ export function pricingFromUsdPerMillion({
 	};
 }
 
+/**
+ * Creates a `Pricing` instance from USD-per-token values.
+ *
+ * Use this when you already have per-token pricing (rather than per-million).
+ */
 export function pricingFromUsdPerToken({
 	inputUsdPerToken,
 	outputUsdPerToken,
@@ -50,6 +60,11 @@ function normalizeCandidateKeys(modelId: string): string[] {
 	return candidates;
 }
 
+/**
+ * Resolves pricing from a map, trying common key variants.
+ *
+ * Example: if you pass `openai/gpt-5.2`, it will also try `gpt-5.2`.
+ */
 export function resolvePricingFromMap(map: PricingMap, modelId: string): Pricing | null {
 	const candidates = normalizeCandidateKeys(modelId);
 	for (const key of candidates) {
