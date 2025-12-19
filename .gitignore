@@ -1,7 +1,11 @@
 # macOS
 .DS_Store
+._*
 .AppleDouble
 .LSOverride
+.Spotlight-V100
+.Trashes
+Icon?
 
 # Node
 node_modules/
@@ -12,6 +16,14 @@ pnpm-debug.log*
 
 # Logs
 *.log
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
 
 # Builds / output
 dist/
@@ -24,10 +36,17 @@ coverage/
 .vitest/
 .nyc_output/
 .pnpm-store/
+.parcel-cache/
+.vite/
+.next/
+.nuxt/
+.svelte-kit/
 
 # Env
 .env
 .env.*
+!.env.example
+!.env.sample
 
 # Archives / binaries
 *.tgz
@@ -38,3 +57,15 @@ coverage/
 *.exe
 *.dll
 *.dylib
+*.so
+*.a
+*.o
+*.obj
+*.class
+*.jar
+*.wasm
+*.node
+*.dSYM/
+
+# oxlint*
+oxlint*
