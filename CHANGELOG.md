@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.1.1 (Unreleased)
+## 0.1.1 (2025-12-23)
 
 - Tooling: bump pnpm to 10.26.1
 - Docs: expand releasing checklist
+- Packaging: publish prebuilt dist on npm
 
 ## 0.1.0 (2025-12-19)
 
