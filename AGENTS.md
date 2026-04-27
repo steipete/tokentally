@@ -9,7 +9,7 @@
 - `coverage/`: test coverage output (generated).
 
 ## Build, Test, and Development Commands
-- `pnpm install`: install dependencies (Node >=20 required).
+- `pnpm install`: install dependencies (Node >=24 required).
 - `pnpm build`: compile TypeScript to `dist/` for publishing.
 - `pnpm test`: run the Vitest suite once.
 - `pnpm test:coverage`: run tests with coverage output.
@@ -38,7 +38,7 @@
 - Update `CHANGELOG.md` for user-facing changes and keep entries descending.
 
 ## Configuration & Runtime Notes
-- Node >=20 (see `package.json` engines).
+- Node >=24 (see `package.json` engines).
 - OpenRouter helpers require `OPENROUTER_API_KEY`.
 - LiteLLM cache defaults to `$HOME/.tokentally/cache`; override with `TOKENTALLY_CACHE_DIR`.
 - Node helpers expect a `fetch` implementation to be passed in.
