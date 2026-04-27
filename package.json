@@ -1,54 +1,55 @@
 {
-	"name": "tokentally",
-	"version": "0.1.1",
-	"description": "Token usage in, dollar totals out.",
-	"type": "module",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/steipete/tokentally.git"
-	},
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./node": {
-			"types": "./dist/node/index.d.ts",
-			"import": "./dist/node/index.js"
-		}
-	},
-	"files": [
-		"dist",
-		"CHANGELOG.md",
-		"README.md",
-		"LICENSE"
-	],
-	"engines": {
-		"node": ">=20"
-	},
-	"packageManager": "pnpm@10.26.1",
-	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
-		"prepare": "pnpm build",
-		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"format": "biome format --write src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
-		"lint": "biome check src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
-		"lint:oxlint": "pnpm exec -- oxlint --deny-warnings --config .oxlintrc.json src tests",
-		"lint:oxlint:typeaware": "pnpm exec -- oxlint --deny-warnings --type-aware --tsconfig tsconfig.json --config .oxlintrc.json src tests",
-		"lint:types": "pnpm lint:oxlint:typeaware && pnpm typecheck",
-		"lint:fix": "biome check --write src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
-		"test": "vitest run",
-		"test:coverage": "vitest run --coverage",
-		"check": "pnpm lint && pnpm lint:oxlint:typeaware && pnpm typecheck && pnpm test:coverage"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.3.10",
-		"@types/node": "^25.0.3",
-		"@vitest/coverage-v8": "^4.0.16",
-		"oxlint": "^1.34.0",
-		"oxlint-tsgolint": "^0.10.0",
-		"typescript": "^5.9.3",
-		"vitest": "^4.0.16"
-	}
+  "name": "tokentally",
+  "version": "0.1.1",
+  "description": "Token usage in, dollar totals out.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/steipete/tokentally.git"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm build",
+    "typecheck": "tsgo -p tsconfig.json --noEmit",
+    "format": "oxfmt --write src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
+    "format:check": "oxfmt --check src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
+    "lint": "pnpm format:check && pnpm lint:oxlint",
+    "lint:oxlint": "pnpm exec -- oxlint --deny-warnings --config .oxlintrc.json src tests",
+    "lint:oxlint:typeaware": "pnpm exec -- oxlint --deny-warnings --type-aware --tsconfig tsconfig.json --config .oxlintrc.json src tests",
+    "lint:types": "pnpm lint:oxlint:typeaware && pnpm typecheck",
+    "lint:fix": "pnpm format && pnpm exec -- oxlint --config .oxlintrc.json --fix src tests",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check": "pnpm lint && pnpm lint:oxlint:typeaware && pnpm typecheck && pnpm test:coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^4.1.5",
+    "oxfmt": "^0.46.0",
+    "oxlint": "^1.61.0",
+    "oxlint-tsgolint": "^0.22.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.26.1"
 }

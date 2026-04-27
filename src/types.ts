@@ -6,16 +6,16 @@
  * - `totalTokens` may be omitted by providers; callers can treat it as advisory.
  */
 export type TokenUsageNormalized = {
-	inputTokens: number;
-	outputTokens: number;
-	reasoningTokens?: number;
-	totalTokens?: number;
+  inputTokens: number;
+  outputTokens: number;
+  reasoningTokens?: number;
+  totalTokens?: number;
 };
 
 /** Per-token USD pricing. */
 export type Pricing = {
-	inputUsdPerToken: number;
-	outputUsdPerToken: number;
+  inputUsdPerToken: number;
+  outputUsdPerToken: number;
 };
 
 /** Map of model id → pricing. */
@@ -30,7 +30,7 @@ export type PricingResolver = (modelId: string) => Pricing | null | Promise<Pric
 
 /** USD cost breakdown (input/output/total). */
 export type CostBreakdown = {
-	inputUsd: number;
-	outputUsd: number;
-	totalUsd: number;
+  inputUsd: number;
+  outputUsd: number;
+  totalUsd: number;
 };
