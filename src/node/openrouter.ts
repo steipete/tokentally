@@ -1,4 +1,4 @@
-import { pricingFromUsdPerMillion } from "../pricing.js";
+import { pricingFromUsdPerToken } from "../pricing.js";
 import type { PricingMap } from "../types.js";
 import type { FetchFn } from "./types.js";
 
@@ -9,8 +9,9 @@ export type OpenRouterModelInfo = {
   id: string;
   context_length?: number;
   pricing?: {
-    prompt?: number;
-    completion?: number;
+    // OpenRouter returns these as USD-per-token numeric strings (e.g. "0.000005").
+    prompt?: string | number;
+    completion?: string | number;
   };
 };
 
@@ -20,7 +21,7 @@ const DEFAULT_TTL_MS = 5 * 60 * 1000;
 /**
  * Fetches the OpenRouter model catalog (cached in-memory per `apiKey`).
  *
- * Note: OpenRouter pricing values are USD per 1M tokens.
+ * Note: OpenRouter pricing values are USD per token, returned as numeric strings.
  */
 export async function fetchOpenRouterModelCatalog({
   apiKey,
@@ -48,27 +49,35 @@ export async function fetchOpenRouterModelCatalog({
 }
 
 /**
+ * Parses an OpenRouter price field into a finite, non-negative USD-per-token number.
+ *
+ * OpenRouter publishes prices as numeric strings (e.g. "0.000005"); numbers are
+ * accepted too for robustness. Returns `null` for missing/malformed values.
+ */
+function parseUsdPerToken(value: string | number | undefined): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  }
+  return null;
+}
+
+/**
  * Converts OpenRouter's catalog pricing to a `PricingMap`.
  *
- * Entries without pricing are skipped.
+ * OpenRouter prices are already USD per token, so they map straight through.
+ * Entries without valid pricing are skipped.
  */
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
   const map: PricingMap = {};
   for (const entry of catalog) {
-    const prompt = entry.pricing?.prompt;
-    const completion = entry.pricing?.completion;
-    if (
-      typeof prompt === "number" &&
-      Number.isFinite(prompt) &&
-      prompt >= 0 &&
-      typeof completion === "number" &&
-      Number.isFinite(completion) &&
-      completion >= 0
-    ) {
-      map[entry.id] = pricingFromUsdPerMillion({
-        inputUsdPerMillion: prompt,
-        outputUsdPerMillion: completion,
-      });
+    const inputUsdPerToken = parseUsdPerToken(entry.pricing?.prompt);
+    const outputUsdPerToken = parseUsdPerToken(entry.pricing?.completion);
+    if (inputUsdPerToken !== null && outputUsdPerToken !== null) {
+      map[entry.id] = pricingFromUsdPerToken({ inputUsdPerToken, outputUsdPerToken });
     }
   }
   return map;
