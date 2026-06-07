@@ -37,13 +37,22 @@ describe("tokentally/node openrouter", () => {
     expect(map["openai/gpt-4o-mini"]?.outputUsdPerToken).toBe(0.0000006);
   });
 
-  it("also accepts numeric per-token pricing", () => {
+  it("preserves numeric pricing as USD per million", () => {
     const map = openRouterPricingMapFromCatalog([
-      { id: "xai/grok-4", pricing: { prompt: 0.000003, completion: 0.000015 } },
+      { id: "xai/grok-4", pricing: { prompt: 3, completion: 15 } },
     ]);
 
     expect(map["xai/grok-4"]?.inputUsdPerToken).toBe(0.000003);
     expect(map["xai/grok-4"]?.outputUsdPerToken).toBe(0.000015);
+  });
+
+  it("accepts mixed string and numeric pricing without changing numeric units", () => {
+    const map = openRouterPricingMapFromCatalog([
+      { id: "mixed/model", pricing: { prompt: "0.000004", completion: 12 } },
+    ]);
+
+    expect(map["mixed/model"]?.inputUsdPerToken).toBe(0.000004);
+    expect(map["mixed/model"]?.outputUsdPerToken).toBe(0.000012);
   });
 
   it("keeps free models priced at zero", () => {

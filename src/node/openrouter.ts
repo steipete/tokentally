@@ -1,4 +1,4 @@
-import { pricingFromUsdPerToken } from "../pricing.js";
+import { pricingFromUsdPerMillion, pricingFromUsdPerToken } from "../pricing.js";
 import type { PricingMap } from "../types.js";
 import type { FetchFn } from "./types.js";
 
@@ -49,18 +49,22 @@ export async function fetchOpenRouterModelCatalog({
 }
 
 /**
- * Parses an OpenRouter price field into a finite, non-negative USD-per-token number.
+ * Parses an OpenRouter price field into a finite, non-negative number.
  *
- * OpenRouter publishes prices as numeric strings (e.g. "0.000005"); numbers are
- * accepted too for robustness. Returns `null` for missing/malformed values.
+ * OpenRouter publishes prices as numeric strings in USD per token (e.g. "0.000005").
+ * Numeric catalog inputs predate that live shape and are preserved as USD per 1M.
+ * Returns `null` for missing/malformed values.
  */
-function parseUsdPerToken(value: string | number | undefined): number | null {
+function parseOpenRouterPrice(value: string | number | undefined): {
+  value: number;
+  unit: "per-token" | "per-million";
+} | null {
   if (typeof value === "number") {
-    return Number.isFinite(value) && value >= 0 ? value : null;
+    return Number.isFinite(value) && value >= 0 ? { value, unit: "per-million" } : null;
   }
   if (typeof value === "string" && value.trim() !== "") {
     const parsed = Number(value);
-    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    return Number.isFinite(parsed) && parsed >= 0 ? { value: parsed, unit: "per-token" } : null;
   }
   return null;
 }
@@ -74,10 +78,23 @@ function parseUsdPerToken(value: string | number | undefined): number | null {
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
   const map: PricingMap = {};
   for (const entry of catalog) {
-    const inputUsdPerToken = parseUsdPerToken(entry.pricing?.prompt);
-    const outputUsdPerToken = parseUsdPerToken(entry.pricing?.completion);
-    if (inputUsdPerToken !== null && outputUsdPerToken !== null) {
-      map[entry.id] = pricingFromUsdPerToken({ inputUsdPerToken, outputUsdPerToken });
+    const inputPrice = parseOpenRouterPrice(entry.pricing?.prompt);
+    const outputPrice = parseOpenRouterPrice(entry.pricing?.completion);
+    if (inputPrice !== null && outputPrice !== null) {
+      map[entry.id] =
+        inputPrice.unit === "per-token" && outputPrice.unit === "per-token"
+          ? pricingFromUsdPerToken({
+              inputUsdPerToken: inputPrice.value,
+              outputUsdPerToken: outputPrice.value,
+            })
+          : pricingFromUsdPerMillion({
+              inputUsdPerMillion:
+                inputPrice.unit === "per-million" ? inputPrice.value : inputPrice.value * 1_000_000,
+              outputUsdPerMillion:
+                outputPrice.unit === "per-million"
+                  ? outputPrice.value
+                  : outputPrice.value * 1_000_000,
+            });
     }
   }
   return map;

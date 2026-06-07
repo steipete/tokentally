@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Node helpers: fix OpenRouter string pricing parsing while preserving numeric catalog compatibility (thanks @devYRPauli)
+
 ## 0.1.1 (2025-12-23)
 
 - Tooling: bump pnpm to 10.26.1
