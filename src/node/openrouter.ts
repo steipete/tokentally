@@ -1,4 +1,4 @@
-import { pricingFromUsdPerMillion } from "../pricing.js";
+import { pricingFromUsdPerMillion, pricingFromUsdPerToken } from "../pricing.js";
 import type { PricingMap } from "../types.js";
 import type { FetchFn } from "./types.js";
 
@@ -9,8 +9,9 @@ export type OpenRouterModelInfo = {
   id: string;
   context_length?: number;
   pricing?: {
-    prompt?: number;
-    completion?: number;
+    // OpenRouter returns these as USD-per-token numeric strings (e.g. "0.000005").
+    prompt?: string | number;
+    completion?: string | number;
   };
 };
 
@@ -20,7 +21,7 @@ const DEFAULT_TTL_MS = 5 * 60 * 1000;
 /**
  * Fetches the OpenRouter model catalog (cached in-memory per `apiKey`).
  *
- * Note: OpenRouter pricing values are USD per 1M tokens.
+ * Note: OpenRouter pricing values are USD per token, returned as numeric strings.
  */
 export async function fetchOpenRouterModelCatalog({
   apiKey,
@@ -48,27 +49,52 @@ export async function fetchOpenRouterModelCatalog({
 }
 
 /**
+ * Parses an OpenRouter price field into a finite, non-negative number.
+ *
+ * OpenRouter publishes prices as numeric strings in USD per token (e.g. "0.000005").
+ * Numeric catalog inputs predate that live shape and are preserved as USD per 1M.
+ * Returns `null` for missing/malformed values.
+ */
+function parseOpenRouterPrice(value: string | number | undefined): {
+  value: number;
+  unit: "per-token" | "per-million";
+} | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value >= 0 ? { value, unit: "per-million" } : null;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? { value: parsed, unit: "per-token" } : null;
+  }
+  return null;
+}
+
+/**
  * Converts OpenRouter's catalog pricing to a `PricingMap`.
  *
- * Entries without pricing are skipped.
+ * OpenRouter prices are already USD per token, so they map straight through.
+ * Entries without valid pricing are skipped.
  */
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
   const map: PricingMap = {};
   for (const entry of catalog) {
-    const prompt = entry.pricing?.prompt;
-    const completion = entry.pricing?.completion;
-    if (
-      typeof prompt === "number" &&
-      Number.isFinite(prompt) &&
-      prompt >= 0 &&
-      typeof completion === "number" &&
-      Number.isFinite(completion) &&
-      completion >= 0
-    ) {
-      map[entry.id] = pricingFromUsdPerMillion({
-        inputUsdPerMillion: prompt,
-        outputUsdPerMillion: completion,
-      });
+    const inputPrice = parseOpenRouterPrice(entry.pricing?.prompt);
+    const outputPrice = parseOpenRouterPrice(entry.pricing?.completion);
+    if (inputPrice !== null && outputPrice !== null) {
+      map[entry.id] =
+        inputPrice.unit === "per-token" && outputPrice.unit === "per-token"
+          ? pricingFromUsdPerToken({
+              inputUsdPerToken: inputPrice.value,
+              outputUsdPerToken: outputPrice.value,
+            })
+          : pricingFromUsdPerMillion({
+              inputUsdPerMillion:
+                inputPrice.unit === "per-million" ? inputPrice.value : inputPrice.value * 1_000_000,
+              outputUsdPerMillion:
+                outputPrice.unit === "per-million"
+                  ? outputPrice.value
+                  : outputPrice.value * 1_000_000,
+            });
     }
   }
   return map;
