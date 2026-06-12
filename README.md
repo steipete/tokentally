@@ -56,7 +56,7 @@ const pricing = resolvePricingFromMap(map, "openai/gpt-5.2");
 
 ## API
 
-- `normalizeTokenUsage(raw)` → `{ inputTokens, outputTokens, reasoningTokens, totalTokens } | null`
+- `normalizeTokenUsage(raw)` → `{ inputTokens, outputTokens, cachedInputTokens, reasoningTokens, totalTokens } | null`
 - `pricingFromUsdPerMillion({ inputUsdPerMillion, outputUsdPerMillion })`
 - `estimateUsdCost({ usage, pricing })`
 - `tallyCosts(calls)` → totals + per-model breakdown

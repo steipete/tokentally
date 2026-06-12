@@ -8,6 +8,7 @@
 export type TokenUsageNormalized = {
   inputTokens: number;
   outputTokens: number;
+  cachedInputTokens?: number;
   reasoningTokens?: number;
   totalTokens?: number;
 };
