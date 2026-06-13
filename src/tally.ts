@@ -39,9 +39,15 @@ export type TallyResult = {
 };
 
 function addUsage(a: TokenUsageNormalized, b: TokenUsageNormalized): TokenUsageNormalized {
+  const cachedInputTokens =
+    a.cachedInputTokens != null || b.cachedInputTokens != null
+      ? (a.cachedInputTokens ?? 0) + (b.cachedInputTokens ?? 0)
+      : undefined;
+
   return {
     inputTokens: a.inputTokens + b.inputTokens,
     outputTokens: a.outputTokens + b.outputTokens,
+    ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
     reasoningTokens: (a.reasoningTokens ?? 0) + (b.reasoningTokens ?? 0),
     totalTokens: (a.totalTokens ?? 0) + (b.totalTokens ?? 0),
   };

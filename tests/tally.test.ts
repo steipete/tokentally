@@ -59,4 +59,39 @@ describe("tallyCosts", () => {
       (expectedOpenAi?.totalUsd ?? 0) + (expectedXai?.totalUsd ?? 0),
     );
   });
+
+  it("aggregates cached input and reasoning token details", async () => {
+    const result = await tallyCosts({
+      calls: [
+        {
+          model: "openai/gpt-5.2",
+          usage: normalizeTokenUsage({
+            prompt_tokens: 100,
+            completion_tokens: 25,
+            prompt_tokens_details: { cached_tokens: 50 },
+            completion_tokens_details: { reasoning_tokens: 8 },
+          }),
+        },
+        {
+          model: "openai/gpt-5.2",
+          usage: normalizeTokenUsage({
+            prompt_tokens: 40,
+            completion_tokens: 10,
+            prompt_tokens_details: { cached_tokens: 12 },
+            completion_tokens_details: { reasoning_tokens: 3 },
+          }),
+        },
+      ],
+      resolvePricing: () =>
+        pricingFromUsdPerMillion({ inputUsdPerMillion: 1, outputUsdPerMillion: 2 }),
+    });
+
+    expect(result.byModel["openai/gpt-5.2"]?.usage).toEqual({
+      inputTokens: 140,
+      outputTokens: 35,
+      cachedInputTokens: 62,
+      reasoningTokens: 11,
+      totalTokens: 175,
+    });
+  });
 });
