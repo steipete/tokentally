@@ -64,7 +64,9 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   const inputTokens = firstTokenCount(inputCandidates);
   const outputTokens = firstTokenCount(outputCandidates);
   const cachedInputTokens = firstTokenCount(cachedInputCandidates);
-  const reasoningTokens = firstTokenCount([...reasoningCandidates, ...nestedReasoningCandidates]);
+  const topLevelReasoningTokens = firstTokenCount(reasoningCandidates);
+  const nestedReasoningTokens = firstTokenCount(nestedReasoningCandidates);
+  const reasoningTokens = topLevelReasoningTokens ?? nestedReasoningTokens;
   const totalTokens = firstTokenCount(totalCandidates);
 
   if (
@@ -79,7 +81,10 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   const normalizedInput = inputTokens ?? 0;
   const normalizedOutput = outputTokens ?? 0;
   const normalizedReasoning = reasoningTokens ?? 0;
-  const inferredTotal = normalizedInput + normalizedOutput + normalizedReasoning;
+  const inferredTotal =
+    normalizedInput +
+    normalizedOutput +
+    (topLevelReasoningTokens != null ? normalizedReasoning : 0);
 
   return {
     inputTokens: normalizedInput,

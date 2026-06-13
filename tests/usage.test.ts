@@ -70,6 +70,21 @@ describe("normalizeTokenUsage", () => {
     });
   });
 
+  it("does not double-count nested reasoning when inferring totals", () => {
+    expect(
+      normalizeTokenUsage({
+        prompt_tokens: 100,
+        completion_tokens: 25,
+        completion_tokens_details: { reasoning_tokens: 8 },
+      }),
+    ).toEqual({
+      inputTokens: 100,
+      outputTokens: 25,
+      reasoningTokens: 8,
+      totalTokens: 125,
+    });
+  });
+
   it("fills missing totals", () => {
     expect(normalizeTokenUsage({ prompt_tokens: 7, completion_tokens: 2 })).toEqual({
       inputTokens: 7,

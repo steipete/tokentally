@@ -91,7 +91,7 @@ describe("tallyCosts", () => {
       outputTokens: 35,
       cachedInputTokens: 62,
       reasoningTokens: 11,
-      totalTokens: 186,
+      totalTokens: 175,
     });
   });
 });
