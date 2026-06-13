@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 (2026-06-13)
 
 - Core API: normalize nested provider usage details such as cached input tokens and reasoning tokens (thanks @kiranmagic7)
 - Node helpers: fix OpenRouter string pricing parsing while preserving numeric catalog compatibility (thanks @devYRPauli)

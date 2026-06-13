@@ -22,6 +22,6 @@ describe("pricing", () => {
     };
     expect(resolvePricingFromMap(map, "openai/gpt-5.2")).toEqual(map["gpt-5.2"]);
     expect(resolvePricingFromMap(map, "gpt-5.2")).toEqual(map["gpt-5.2"]);
-    expect(resolvePricingFromMap(map, "anthropic/claude-4.5-sonnet")).toBeNull();
+    expect(resolvePricingFromMap(map, "not-in-map")).toBeNull();
   });
 });
