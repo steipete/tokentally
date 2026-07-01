@@ -39,11 +39,11 @@ describe("tokentally/node openrouter", () => {
 
   it("preserves numeric pricing as USD per million", () => {
     const map = openRouterPricingMapFromCatalog([
-      { id: "x-ai/grok-4", pricing: { prompt: 3, completion: 15 } },
+      { id: "provider/numeric-model", pricing: { prompt: 3, completion: 15 } },
     ]);
 
-    expect(map["x-ai/grok-4"]?.inputUsdPerToken).toBe(0.000003);
-    expect(map["x-ai/grok-4"]?.outputUsdPerToken).toBe(0.000015);
+    expect(map["provider/numeric-model"]?.inputUsdPerToken).toBe(0.000003);
+    expect(map["provider/numeric-model"]?.outputUsdPerToken).toBe(0.000015);
   });
 
   it("accepts mixed string and numeric pricing without changing numeric units", () => {

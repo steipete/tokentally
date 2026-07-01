@@ -41,11 +41,12 @@
   },
   "devDependencies": {
     "@types/node": "^26.0.1",
-    "@typescript/native-preview": "7.0.0-dev.20260623.1",
+    "@typescript/native-preview": "7.0.0-dev.20260701.1",
     "@vitest/coverage-v8": "^4.1.9",
-    "oxfmt": "^0.56.0",
-    "oxlint": "^1.71.0",
-    "oxlint-tsgolint": "^0.23.0",
+    "esbuild": "^0.28.1",
+    "oxfmt": "^0.57.0",
+    "oxlint": "^1.72.0",
+    "oxlint-tsgolint": "^0.24.0",
     "postcss": "^8.5.16",
     "typescript": "^6.0.3",
     "vite": "^8.1.2",
@@ -54,10 +55,5 @@
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "pnpm@10.33.2",
-  "pnpm": {
-    "overrides": {
-      "esbuild": "0.28.1"
-    }
-  }
+  "packageManager": "pnpm@10.34.3"
 }

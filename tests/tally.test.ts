@@ -13,14 +13,14 @@ describe("tallyCosts", () => {
         usage: normalizeTokenUsage({ promptTokens: 20, completionTokens: 10 }),
       },
       {
-        model: "x-ai/grok-4.1-fast",
+        model: "provider/model-b",
         usage: normalizeTokenUsage({ input_tokens: 10, output_tokens: 5 }),
       },
     ];
 
     const pricingMap: Record<string, ReturnType<typeof pricingFromUsdPerMillion>> = {
       "openai/gpt-5.2": pricingFromUsdPerMillion({ inputUsdPerMillion: 2, outputUsdPerMillion: 4 }),
-      "x-ai/grok-4.1-fast": pricingFromUsdPerMillion({
+      "provider/model-b": pricingFromUsdPerMillion({
         inputUsdPerMillion: 0.2,
         outputUsdPerMillion: 0.5,
       }),
@@ -39,8 +39,8 @@ describe("tallyCosts", () => {
       totalTokens: 180,
     });
 
-    expect(result.byModel["x-ai/grok-4.1-fast"]?.calls).toBe(1);
-    expect(result.byModel["x-ai/grok-4.1-fast"]?.usage).toEqual({
+    expect(result.byModel["provider/model-b"]?.calls).toBe(1);
+    expect(result.byModel["provider/model-b"]?.usage).toEqual({
       inputTokens: 10,
       outputTokens: 5,
       reasoningTokens: 0,
@@ -51,12 +51,12 @@ describe("tallyCosts", () => {
       usage: result.byModel["openai/gpt-5.2"]?.usage ?? null,
       pricing: pricingMap["openai/gpt-5.2"],
     });
-    const expectedXai = estimateUsdCost({
-      usage: result.byModel["x-ai/grok-4.1-fast"]?.usage ?? null,
-      pricing: pricingMap["x-ai/grok-4.1-fast"],
+    const expectedModelB = estimateUsdCost({
+      usage: result.byModel["provider/model-b"]?.usage ?? null,
+      pricing: pricingMap["provider/model-b"],
     });
     expect(result.total?.totalUsd).toBeCloseTo(
-      (expectedOpenAi?.totalUsd ?? 0) + (expectedXai?.totalUsd ?? 0),
+      (expectedOpenAi?.totalUsd ?? 0) + (expectedModelB?.totalUsd ?? 0),
     );
   });
 
