@@ -25,11 +25,11 @@
     }
   },
   "scripts": {
-    "build": "tsgo -p tsconfig.build.json",
+    "build": "tsdown",
     "prepare": "pnpm build",
     "typecheck": "tsgo -p tsconfig.json --noEmit",
-    "format": "oxfmt --write src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
-    "format:check": "oxfmt --check src tests package.json tsconfig.json tsconfig.build.json vitest.config.ts README.md",
+    "format": "oxfmt --write src tests package.json tsconfig.json tsdown.config.ts vitest.config.ts README.md",
+    "format:check": "oxfmt --check src tests package.json tsconfig.json tsdown.config.ts vitest.config.ts README.md",
     "lint": "pnpm format:check && pnpm lint:oxlint",
     "lint:oxlint": "pnpm exec -- oxlint --deny-warnings --config .oxlintrc.json src tests",
     "lint:oxlint:typeaware": "pnpm exec -- oxlint --deny-warnings --type-aware --tsconfig tsconfig.json --config .oxlintrc.json src tests",
@@ -37,17 +37,19 @@
     "lint:fix": "pnpm format && pnpm exec -- oxlint --config .oxlintrc.json --fix src tests",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm lint && pnpm lint:oxlint:typeaware && pnpm typecheck && pnpm test:coverage"
+    "check": "pnpm lint && pnpm lint:oxlint:typeaware && pnpm typecheck && pnpm test:coverage && pnpm build"
   },
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.4",
     "@types/node": "^26.0.1",
     "@typescript/native-preview": "7.0.0-dev.20260701.1",
     "@vitest/coverage-v8": "^4.1.9",
-    "esbuild": "^0.28.1",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.72.0",
     "oxlint-tsgolint": "^0.24.0",
     "postcss": "^8.5.16",
+    "publint": "^0.3.21",
+    "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
     "vite": "^8.1.2",
     "vitest": "^4.1.9"
