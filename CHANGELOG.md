@@ -4,6 +4,7 @@
 
 - Core API: normalize nested provider usage details such as cached input tokens and reasoning tokens (thanks @kiranmagic7)
 - Node helpers: fix OpenRouter string pricing parsing while preserving numeric catalog compatibility (thanks @devYRPauli)
+- Packaging: bundle ESM and declarations with the Rolldown-powered tsdown toolchain
 
 ## 0.1.1 (2025-12-23)
 

@@ -1,2 +1,1 @@
-allowBuilds:
-  esbuild: true
+autoInstallPeers: false

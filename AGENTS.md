@@ -10,18 +10,18 @@
 
 ## Build, Test, and Development Commands
 - `pnpm install`: install dependencies (Node >=24 required).
-- `pnpm build`: compile TypeScript to `dist/` for publishing.
+- `pnpm build`: bundle the ESM package with tsdown/Rolldown to `dist/` for publishing.
 - `pnpm test`: run the Vitest suite once.
 - `pnpm test:coverage`: run tests with coverage output.
-- `pnpm lint`: Biome linting for source/tests/config.
-- `pnpm lint:fix`: Biome autofix where safe.
+- `pnpm lint`: Oxfmt formatting plus Oxlint for source/tests/config.
+- `pnpm lint:fix`: Oxfmt and Oxlint autofix where safe.
 - `pnpm lint:oxlint:typeaware`: type-aware oxlint pass.
 - `pnpm typecheck`: TypeScript typecheck without emit.
-- `pnpm check`: full gate (lint + oxlint + typecheck + coverage).
+- `pnpm check`: full gate (format + Oxlint + typecheck + coverage + build/package validation).
 
 ## Coding Style & Naming Conventions
 - ESM TypeScript; keep modules small and focused.
-- Indentation: 2 spaces; line width: 100 (Biome).
+- Indentation: 2 spaces; line width: 100.
 - Use `pnpm format` or `pnpm lint:fix` before pushing.
 - Naming: `camelCase` for functions/vars, `PascalCase` for types, `*.test.ts` for tests.
 - Prefer descriptive model IDs and pricing names (`pricingFromUsdPerMillion`, `normalizeTokenUsage`).

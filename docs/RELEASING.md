@@ -15,11 +15,11 @@
 
 ## 3) Validation (warning-free)
 
-- [ ] `pnpm check` (must be clean; oxlint is `--deny-warnings`).
+- [ ] `pnpm check` (must be clean; Oxlint denies warnings, and tsdown runs publint + attw).
 
 ## 4) Artifacts
 
-- [ ] `pnpm build`
+- [ ] `pnpm build` (Rolldown-powered ESM and declaration bundles)
 - [ ] `npm pack --pack-destination /tmp`
 - [ ] Checksums (optional, for GitHub release assets):
   - `shasum /tmp/tokentally-<version>.tgz > /tmp/tokentally-<version>.tgz.sha1`
