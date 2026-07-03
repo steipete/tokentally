@@ -42,7 +42,7 @@
   "devDependencies": {
     "@arethetypeswrong/core": "^0.18.4",
     "@types/node": "^26.0.1",
-    "@typescript/native-preview": "7.0.0-dev.20260701.1",
+    "@typescript/native-preview": "7.0.0-dev.20260702.3",
     "@vitest/coverage-v8": "^4.1.9",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.72.0",
