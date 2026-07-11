@@ -10,7 +10,7 @@ importers:
     devDependencies:
       '@arethetypeswrong/core':
         specifier: ^0.18.4
-        version: 0.18.4
+        version: 0.18.5
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
@@ -37,7 +37,7 @@ importers:
         version: 0.3.21
       tsdown:
         specifier: ^0.22.4
-        version: 0.22.4(@arethetypeswrong/core@0.18.4)(@typescript/typescript6@6.0.2)(publint@0.3.21)
+        version: 0.22.4(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.21)
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -53,8 +53,8 @@ packages:
   '@andrewbranch/untar.js@1.0.3':
     resolution: {integrity: sha512-Jh15/qVmrLGhkKJBdXlK1+9tY4lZruYjsgkDFj08ZmDiWVBLJcqkok7Z0/R0In+i1rScBpJlSvrTS2Lm41Pbnw==}
 
-  '@arethetypeswrong/core@0.18.4':
-    resolution: {integrity: sha512-M5F0ePyN6h2Z6XxRiyIPqjGbltotXLjR0CKA0uKspsDu0QmgTNYvRb4RSQPMUs2ZXZHCCYpbaZbFbYOXLxCjUA==}
+  '@arethetypeswrong/core@0.18.5':
+    resolution: {integrity: sha512-9ytjzGwxjm9Uz7I9avfbt5vlQt6uk9uRRESzJjqrznl6WKvI6dwYTo+vJ3U02Wrq/mR3iql/PzhvHhKdJIAjDQ==}
     engines: {node: '>=20'}
 
   '@babel/helper-string-parser@7.29.7':
@@ -1297,7 +1297,7 @@ snapshots:
 
   '@andrewbranch/untar.js@1.0.3': {}
 
-  '@arethetypeswrong/core@0.18.4':
+  '@arethetypeswrong/core@0.18.5':
     dependencies:
       '@andrewbranch/untar.js': 1.0.3
       '@loaderkit/resolve': 1.0.6
@@ -2051,7 +2051,7 @@ snapshots:
 
   tree-kill@1.2.2: {}
 
-  tsdown@0.22.4(@arethetypeswrong/core@0.18.4)(@typescript/typescript6@6.0.2)(publint@0.3.21):
+  tsdown@0.22.4(@arethetypeswrong/core@0.18.5)(@typescript/typescript6@6.0.2)(publint@0.3.21):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
@@ -2069,7 +2069,7 @@ snapshots:
       tree-kill: 1.2.2
       unconfig-core: 7.5.0
     optionalDependencies:
-      '@arethetypeswrong/core': 0.18.4
+      '@arethetypeswrong/core': 0.18.5
       publint: 0.3.21
       typescript: '@typescript/typescript6@6.0.2'
     transitivePeerDependencies:
