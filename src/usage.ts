@@ -51,9 +51,14 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
     raw.output_tokens,
     raw.completion_tokens,
   ];
+  // Anthropic reports both cache fields at the top level, and `input_tokens`
+  // excludes them, so they are additive rather than a subset of the input count.
+  const anthropicCacheRead = firstTokenCount([raw.cache_read_input_tokens]);
+  const anthropicCacheCreation = firstTokenCount([raw.cache_creation_input_tokens]);
   const cachedInputCandidates = [
     raw.cachedInputTokens,
     raw.cached_input_tokens,
+    anthropicCacheRead,
     fieldFromRecord(inputDetails, "cached_tokens"),
     fieldFromRecord(inputDetails, "cache_read_input_tokens"),
   ];
@@ -73,6 +78,7 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
     inputTokens == null &&
     outputTokens == null &&
     cachedInputTokens == null &&
+    anthropicCacheCreation == null &&
     reasoningTokens == null &&
     totalTokens == null
   )
@@ -84,6 +90,8 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   const inferredTotal =
     normalizedInput +
     normalizedOutput +
+    (anthropicCacheRead ?? 0) +
+    (anthropicCacheCreation ?? 0) +
     (topLevelReasoningTokens != null ? normalizedReasoning : 0);
 
   return {
