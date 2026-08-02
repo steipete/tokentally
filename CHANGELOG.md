@@ -2,6 +2,7 @@
 
 ## 0.1.3 (Unreleased)
 
+- Core API: count Anthropic cache reads and writes toward inferred token totals (thanks @devYRPauli)
 - Tooling: update development dependencies and pnpm
 
 ## 0.1.2 (2026-07-01)
