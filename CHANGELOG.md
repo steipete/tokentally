@@ -2,6 +2,8 @@
 
 ## 0.1.3 (Unreleased)
 
+- Tooling: update development dependencies and pnpm
+
 ## 0.1.2 (2026-07-01)
 
 - Core API: normalize nested provider usage details such as cached input tokens and reasoning tokens (thanks @kiranmagic7)
