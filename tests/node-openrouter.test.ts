@@ -12,7 +12,7 @@ describe("tokentally/node openrouter", () => {
         JSON.stringify({
           data: [
             {
-              id: "anthropic/claude-opus-4.8",
+              id: "anthropic/claude-opus-4-8",
               pricing: { prompt: "0.000005", completion: "0.000025" },
             },
             {
@@ -31,8 +31,8 @@ describe("tokentally/node openrouter", () => {
     });
 
     // Values are already per-token, so they pass through unchanged.
-    expect(map["anthropic/claude-opus-4.8"]?.inputUsdPerToken).toBe(0.000005);
-    expect(map["anthropic/claude-opus-4.8"]?.outputUsdPerToken).toBe(0.000025);
+    expect(map["anthropic/claude-opus-4-8"]?.inputUsdPerToken).toBe(0.000005);
+    expect(map["anthropic/claude-opus-4-8"]?.outputUsdPerToken).toBe(0.000025);
     expect(map["openai/gpt-4o-mini"]?.inputUsdPerToken).toBe(0.00000015);
     expect(map["openai/gpt-4o-mini"]?.outputUsdPerToken).toBe(0.0000006);
   });
