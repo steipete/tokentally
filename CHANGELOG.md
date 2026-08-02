@@ -2,8 +2,6 @@
 
 ## 0.1.3 (Unreleased)
 
-- Core API: count Anthropic top-level `cache_read_input_tokens` and `cache_creation_input_tokens` toward inferred totals and populate `cachedInputTokens` (thanks @devYRPauli)
-
 ## 0.1.2 (2026-07-01)
 
 - Core API: normalize nested provider usage details such as cached input tokens and reasoning tokens (thanks @kiranmagic7)
