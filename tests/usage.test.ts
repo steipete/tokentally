@@ -108,4 +108,54 @@ describe("normalizeTokenUsage", () => {
       totalTokens: 3,
     });
   });
+
+  it("counts Anthropic top-level cache tokens toward the total", () => {
+    // Anthropic's `input_tokens` is the uncached remainder, so the cache
+    // fields add to the prompt size rather than being a subset of it.
+    expect(
+      normalizeTokenUsage({
+        input_tokens: 100,
+        output_tokens: 50,
+        cache_creation_input_tokens: 20,
+        cache_read_input_tokens: 500,
+      }),
+    ).toEqual({
+      inputTokens: 100,
+      outputTokens: 50,
+      cachedInputTokens: 500,
+      totalTokens: 670,
+    });
+  });
+
+  it("keeps OpenAI nested cached tokens out of the total", () => {
+    // OpenAI's cached_tokens is already included in prompt_tokens.
+    expect(
+      normalizeTokenUsage({
+        prompt_tokens: 100,
+        completion_tokens: 50,
+        prompt_tokens_details: { cached_tokens: 80 },
+      }),
+    ).toEqual({
+      inputTokens: 100,
+      outputTokens: 50,
+      cachedInputTokens: 80,
+      totalTokens: 150,
+    });
+  });
+
+  it("prefers an explicit total over the inferred one", () => {
+    expect(
+      normalizeTokenUsage({
+        input_tokens: 100,
+        output_tokens: 50,
+        cache_read_input_tokens: 500,
+        total_tokens: 999,
+      }),
+    ).toEqual({
+      inputTokens: 100,
+      outputTokens: 50,
+      cachedInputTokens: 500,
+      totalTokens: 999,
+    });
+  });
 });
