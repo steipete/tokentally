@@ -2,6 +2,8 @@
 
 ## 0.1.4 (Unreleased)
 
+- Docs: rewrite the README around installation, first use, and catalog pricing
+
 ## 0.1.3 (2026-08-01)
 
 - Core API: count Anthropic cache reads and writes toward inferred token totals (thanks @devYRPauli)
