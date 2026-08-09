@@ -3,6 +3,7 @@
 ## 0.1.4 (Unreleased)
 
 - Docs: rewrite the README around installation, first use, and catalog pricing
+- Tooling: refresh the formatter, linter, package validation, types, CSS, and Vite toolchain
 
 ## 0.1.3 (2026-08-01)
 
