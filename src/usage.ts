@@ -54,7 +54,10 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   // Anthropic reports both cache fields at the top level, and `input_tokens`
   // excludes them, so they are additive rather than a subset of the input count.
   const anthropicCacheRead = firstTokenCount([raw.cache_read_input_tokens]);
-  const anthropicCacheCreation = firstTokenCount([raw.cache_creation_input_tokens]);
+  const cacheCreationInputTokens = firstTokenCount([
+    raw.cacheCreationInputTokens,
+    raw.cache_creation_input_tokens,
+  ]);
   const cachedInputCandidates = [
     raw.cachedInputTokens,
     raw.cached_input_tokens,
@@ -73,12 +76,16 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   const nestedReasoningTokens = firstTokenCount(nestedReasoningCandidates);
   const reasoningTokens = topLevelReasoningTokens ?? nestedReasoningTokens;
   const totalTokens = firstTokenCount(totalCandidates);
+  const explicitUncachedInputTokens = firstTokenCount([
+    raw.uncachedInputTokens,
+    raw.uncached_input_tokens,
+  ]);
 
   if (
     inputTokens == null &&
     outputTokens == null &&
     cachedInputTokens == null &&
-    anthropicCacheCreation == null &&
+    cacheCreationInputTokens == null &&
     reasoningTokens == null &&
     totalTokens == null
   )
@@ -87,17 +94,26 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   const normalizedInput = inputTokens ?? 0;
   const normalizedOutput = outputTokens ?? 0;
   const normalizedReasoning = reasoningTokens ?? 0;
+  const uncachedInputTokens =
+    explicitUncachedInputTokens ??
+    (anthropicCacheRead != null || cacheCreationInputTokens != null
+      ? normalizedInput
+      : cachedInputTokens != null
+        ? Math.max(0, normalizedInput - cachedInputTokens)
+        : null);
   const inferredTotal =
     normalizedInput +
     normalizedOutput +
     (anthropicCacheRead ?? 0) +
-    (anthropicCacheCreation ?? 0) +
+    (cacheCreationInputTokens ?? 0) +
     (topLevelReasoningTokens != null ? normalizedReasoning : 0);
 
   return {
     inputTokens: normalizedInput,
     outputTokens: normalizedOutput,
+    ...(uncachedInputTokens != null ? { uncachedInputTokens } : {}),
     ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+    ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
     ...(reasoningTokens != null ? { reasoningTokens: normalizedReasoning } : {}),
     ...(totalTokens != null ? { totalTokens } : { totalTokens: inferredTotal }),
   };

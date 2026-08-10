@@ -8,9 +8,13 @@ import type { Pricing, PricingMap } from "./types.js";
 export function pricingFromUsdPerMillion({
   inputUsdPerMillion,
   outputUsdPerMillion,
+  cachedInputUsdPerMillion,
+  cacheCreationInputUsdPerMillion,
 }: {
   inputUsdPerMillion: number;
   outputUsdPerMillion: number;
+  cachedInputUsdPerMillion?: number;
+  cacheCreationInputUsdPerMillion?: number;
 }): Pricing {
   if (!Number.isFinite(inputUsdPerMillion) || inputUsdPerMillion < 0) {
     throw new Error("inputUsdPerMillion must be a finite, non-negative number");
@@ -18,9 +22,27 @@ export function pricingFromUsdPerMillion({
   if (!Number.isFinite(outputUsdPerMillion) || outputUsdPerMillion < 0) {
     throw new Error("outputUsdPerMillion must be a finite, non-negative number");
   }
+  if (
+    cachedInputUsdPerMillion !== undefined &&
+    (!Number.isFinite(cachedInputUsdPerMillion) || cachedInputUsdPerMillion < 0)
+  ) {
+    throw new Error("cachedInputUsdPerMillion must be a finite, non-negative number");
+  }
+  if (
+    cacheCreationInputUsdPerMillion !== undefined &&
+    (!Number.isFinite(cacheCreationInputUsdPerMillion) || cacheCreationInputUsdPerMillion < 0)
+  ) {
+    throw new Error("cacheCreationInputUsdPerMillion must be a finite, non-negative number");
+  }
   return {
     inputUsdPerToken: inputUsdPerMillion / 1_000_000,
     outputUsdPerToken: outputUsdPerMillion / 1_000_000,
+    ...(cachedInputUsdPerMillion !== undefined
+      ? { cachedInputUsdPerToken: cachedInputUsdPerMillion / 1_000_000 }
+      : {}),
+    ...(cacheCreationInputUsdPerMillion !== undefined
+      ? { cacheCreationInputUsdPerToken: cacheCreationInputUsdPerMillion / 1_000_000 }
+      : {}),
   };
 }
 
@@ -32,9 +54,13 @@ export function pricingFromUsdPerMillion({
 export function pricingFromUsdPerToken({
   inputUsdPerToken,
   outputUsdPerToken,
+  cachedInputUsdPerToken,
+  cacheCreationInputUsdPerToken,
 }: {
   inputUsdPerToken: number;
   outputUsdPerToken: number;
+  cachedInputUsdPerToken?: number;
+  cacheCreationInputUsdPerToken?: number;
 }): Pricing {
   if (!Number.isFinite(inputUsdPerToken) || inputUsdPerToken < 0) {
     throw new Error("inputUsdPerToken must be a finite, non-negative number");
@@ -42,7 +68,24 @@ export function pricingFromUsdPerToken({
   if (!Number.isFinite(outputUsdPerToken) || outputUsdPerToken < 0) {
     throw new Error("outputUsdPerToken must be a finite, non-negative number");
   }
-  return { inputUsdPerToken, outputUsdPerToken };
+  if (
+    cachedInputUsdPerToken !== undefined &&
+    (!Number.isFinite(cachedInputUsdPerToken) || cachedInputUsdPerToken < 0)
+  ) {
+    throw new Error("cachedInputUsdPerToken must be a finite, non-negative number");
+  }
+  if (
+    cacheCreationInputUsdPerToken !== undefined &&
+    (!Number.isFinite(cacheCreationInputUsdPerToken) || cacheCreationInputUsdPerToken < 0)
+  ) {
+    throw new Error("cacheCreationInputUsdPerToken must be a finite, non-negative number");
+  }
+  return {
+    inputUsdPerToken,
+    outputUsdPerToken,
+    ...(cachedInputUsdPerToken !== undefined ? { cachedInputUsdPerToken } : {}),
+    ...(cacheCreationInputUsdPerToken !== undefined ? { cacheCreationInputUsdPerToken } : {}),
+  };
 }
 
 function normalizeCandidateKeys(modelId: string): string[] {

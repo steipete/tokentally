@@ -13,7 +13,18 @@ export function estimateUsdCost({
   pricing: Pricing | null;
 }): CostBreakdown | null {
   if (!usage || !pricing) return null;
-  const inputUsd = usage.inputTokens * pricing.inputUsdPerToken;
+  const uncachedInputTokens = usage.uncachedInputTokens ?? usage.inputTokens;
+  const cachedInputTokens = usage.cachedInputTokens ?? 0;
+  const cacheCreationInputTokens = usage.cacheCreationInputTokens ?? 0;
+  // Some catalog providers do not publish cache rates for every model. Falling back to the
+  // ordinary input rate avoids silently treating billed cache tokens as free.
+  const cachedInputUsdPerToken = pricing.cachedInputUsdPerToken ?? pricing.inputUsdPerToken;
+  const cacheCreationInputUsdPerToken =
+    pricing.cacheCreationInputUsdPerToken ?? pricing.inputUsdPerToken;
+  const inputUsd =
+    uncachedInputTokens * pricing.inputUsdPerToken +
+    cachedInputTokens * cachedInputUsdPerToken +
+    cacheCreationInputTokens * cacheCreationInputUsdPerToken;
   const outputUsd = usage.outputTokens * pricing.outputUsdPerToken;
   return { inputUsd, outputUsd, totalUsd: inputUsd + outputUsd };
 }
@@ -39,15 +50,25 @@ export type TallyResult = {
 };
 
 function addUsage(a: TokenUsageNormalized, b: TokenUsageNormalized): TokenUsageNormalized {
+  const uncachedInputTokens =
+    a.uncachedInputTokens != null || b.uncachedInputTokens != null
+      ? (a.uncachedInputTokens ?? a.inputTokens) + (b.uncachedInputTokens ?? b.inputTokens)
+      : undefined;
   const cachedInputTokens =
     a.cachedInputTokens != null || b.cachedInputTokens != null
       ? (a.cachedInputTokens ?? 0) + (b.cachedInputTokens ?? 0)
+      : undefined;
+  const cacheCreationInputTokens =
+    a.cacheCreationInputTokens != null || b.cacheCreationInputTokens != null
+      ? (a.cacheCreationInputTokens ?? 0) + (b.cacheCreationInputTokens ?? 0)
       : undefined;
 
   return {
     inputTokens: a.inputTokens + b.inputTokens,
     outputTokens: a.outputTokens + b.outputTokens,
+    ...(uncachedInputTokens != null ? { uncachedInputTokens } : {}),
     ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+    ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
     reasoningTokens: (a.reasoningTokens ?? 0) + (b.reasoningTokens ?? 0),
     totalTokens: (a.totalTokens ?? 0) + (b.totalTokens ?? 0),
   };

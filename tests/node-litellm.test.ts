@@ -14,12 +14,16 @@ describe("tokentally/node litellm", () => {
       "openai/gpt-5.2": {
         input_cost_per_token: 1 / 1_000_000,
         output_cost_per_token: 2 / 1_000_000,
+        cache_read_input_token_cost: 0.1 / 1_000_000,
+        cache_creation_input_token_cost: 1.25 / 1_000_000,
         max_output_tokens: 1234,
       },
     };
     expect(resolveLiteLlmPricing(catalog, "openai/gpt-5.2")).toEqual({
       inputUsdPerToken: 1 / 1_000_000,
       outputUsdPerToken: 2 / 1_000_000,
+      cachedInputUsdPerToken: 0.1 / 1_000_000,
+      cacheCreationInputUsdPerToken: 1.25 / 1_000_000,
     });
     expect(resolveLiteLlmMaxOutputTokens(catalog, "openai/gpt-5.2")).toBe(1234);
   });

@@ -13,7 +13,12 @@ describe("tokentally/node openrouter", () => {
           data: [
             {
               id: "anthropic/claude-opus-4-8",
-              pricing: { prompt: "0.000005", completion: "0.000025" },
+              pricing: {
+                prompt: "0.000005",
+                completion: "0.000025",
+                input_cache_read: "0.0000005",
+                input_cache_write: "0.00000625",
+              },
             },
             {
               id: "openai/gpt-4o-mini",
@@ -33,6 +38,8 @@ describe("tokentally/node openrouter", () => {
     // Values are already per-token, so they pass through unchanged.
     expect(map["anthropic/claude-opus-4-8"]?.inputUsdPerToken).toBe(0.000005);
     expect(map["anthropic/claude-opus-4-8"]?.outputUsdPerToken).toBe(0.000025);
+    expect(map["anthropic/claude-opus-4-8"]?.cachedInputUsdPerToken).toBe(0.0000005);
+    expect(map["anthropic/claude-opus-4-8"]?.cacheCreationInputUsdPerToken).toBe(0.00000625);
     expect(map["openai/gpt-4o-mini"]?.inputUsdPerToken).toBe(0.00000015);
     expect(map["openai/gpt-4o-mini"]?.outputUsdPerToken).toBe(0.0000006);
   });

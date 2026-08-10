@@ -37,6 +37,7 @@ describe("normalizeTokenUsage", () => {
     ).toEqual({
       inputTokens: 100,
       outputTokens: 20,
+      uncachedInputTokens: 60,
       cachedInputTokens: 40,
       reasoningTokens: 7,
       totalTokens: 120,
@@ -55,6 +56,7 @@ describe("normalizeTokenUsage", () => {
     ).toEqual({
       inputTokens: 150,
       outputTokens: 30,
+      uncachedInputTokens: 125,
       cachedInputTokens: 25,
       reasoningTokens: 12,
       totalTokens: 180,
@@ -65,6 +67,7 @@ describe("normalizeTokenUsage", () => {
     expect(normalizeTokenUsage({ inputTokens: 10, cached_input_tokens: 4 })).toEqual({
       inputTokens: 10,
       outputTokens: 0,
+      uncachedInputTokens: 6,
       cachedInputTokens: 4,
       totalTokens: 10,
     });
@@ -122,7 +125,9 @@ describe("normalizeTokenUsage", () => {
     ).toEqual({
       inputTokens: 100,
       outputTokens: 50,
+      uncachedInputTokens: 100,
       cachedInputTokens: 500,
+      cacheCreationInputTokens: 20,
       totalTokens: 670,
     });
   });
@@ -138,6 +143,7 @@ describe("normalizeTokenUsage", () => {
     ).toEqual({
       inputTokens: 100,
       outputTokens: 50,
+      uncachedInputTokens: 20,
       cachedInputTokens: 80,
       totalTokens: 150,
     });
@@ -154,6 +160,7 @@ describe("normalizeTokenUsage", () => {
     ).toEqual({
       inputTokens: 100,
       outputTokens: 50,
+      uncachedInputTokens: 100,
       cachedInputTokens: 500,
       totalTokens: 999,
     });
