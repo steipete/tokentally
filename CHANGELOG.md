@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.1.5 (Unreleased)
+
 ## 0.1.4 (2026-08-09)
 
 **Highlight:** cached tokens are now priced. If your workload uses prompt
