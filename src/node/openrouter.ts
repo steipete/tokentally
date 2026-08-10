@@ -1,4 +1,4 @@
-import { pricingFromUsdPerMillion, pricingFromUsdPerToken } from "../pricing.js";
+import { pricingFromUsdPerToken } from "../pricing.js";
 import type { PricingMap } from "../types.js";
 import type { FetchFn } from "./types.js";
 
@@ -12,6 +12,8 @@ export type OpenRouterModelInfo = {
     // OpenRouter returns these as USD-per-token numeric strings (e.g. "0.000005").
     prompt?: string | number;
     completion?: string | number;
+    input_cache_read?: string | number;
+    input_cache_write?: string | number;
   };
 };
 
@@ -69,6 +71,13 @@ function parseOpenRouterPrice(value: string | number | undefined): {
   return null;
 }
 
+function openRouterPricePerToken(
+  price: ReturnType<typeof parseOpenRouterPrice>,
+): number | undefined {
+  if (price === null) return undefined;
+  return price.unit === "per-token" ? price.value : price.value / 1_000_000;
+}
+
 /**
  * Converts OpenRouter's catalog pricing to a `PricingMap`.
  *
@@ -81,20 +90,18 @@ export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]):
     const inputPrice = parseOpenRouterPrice(entry.pricing?.prompt);
     const outputPrice = parseOpenRouterPrice(entry.pricing?.completion);
     if (inputPrice !== null && outputPrice !== null) {
-      map[entry.id] =
-        inputPrice.unit === "per-token" && outputPrice.unit === "per-token"
-          ? pricingFromUsdPerToken({
-              inputUsdPerToken: inputPrice.value,
-              outputUsdPerToken: outputPrice.value,
-            })
-          : pricingFromUsdPerMillion({
-              inputUsdPerMillion:
-                inputPrice.unit === "per-million" ? inputPrice.value : inputPrice.value * 1_000_000,
-              outputUsdPerMillion:
-                outputPrice.unit === "per-million"
-                  ? outputPrice.value
-                  : outputPrice.value * 1_000_000,
-            });
+      const cachedInputUsdPerToken = openRouterPricePerToken(
+        parseOpenRouterPrice(entry.pricing?.input_cache_read),
+      );
+      const cacheCreationInputUsdPerToken = openRouterPricePerToken(
+        parseOpenRouterPrice(entry.pricing?.input_cache_write),
+      );
+      map[entry.id] = pricingFromUsdPerToken({
+        inputUsdPerToken: openRouterPricePerToken(inputPrice)!,
+        outputUsdPerToken: openRouterPricePerToken(outputPrice)!,
+        ...(cachedInputUsdPerToken !== undefined ? { cachedInputUsdPerToken } : {}),
+        ...(cacheCreationInputUsdPerToken !== undefined ? { cacheCreationInputUsdPerToken } : {}),
+      });
     }
   }
   return map;

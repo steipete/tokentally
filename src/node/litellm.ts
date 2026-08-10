@@ -12,6 +12,8 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 type LiteLlmModelRow = {
   input_cost_per_token?: number;
   output_cost_per_token?: number;
+  cache_read_input_token_cost?: number;
+  cache_creation_input_token_cost?: number;
   max_output_tokens?: number | string;
   max_tokens?: number | string;
   max_input_tokens?: number | string;
@@ -178,7 +180,20 @@ export function resolveLiteLlmPricing(catalog: LiteLlmCatalog, modelId: string):
       output >= 0
     ) {
       if (input === 0 && output === 0) continue;
-      return { inputUsdPerToken: input, outputUsdPerToken: output };
+      const cachedInput = row?.cache_read_input_token_cost;
+      const cacheCreationInput = row?.cache_creation_input_token_cost;
+      return {
+        inputUsdPerToken: input,
+        outputUsdPerToken: output,
+        ...(typeof cachedInput === "number" && Number.isFinite(cachedInput) && cachedInput >= 0
+          ? { cachedInputUsdPerToken: cachedInput }
+          : {}),
+        ...(typeof cacheCreationInput === "number" &&
+        Number.isFinite(cacheCreationInput) &&
+        cacheCreationInput >= 0
+          ? { cacheCreationInputUsdPerToken: cacheCreationInput }
+          : {}),
+      };
     }
   }
   return null;

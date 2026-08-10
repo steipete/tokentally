@@ -61,7 +61,9 @@ const usage = normalizeTokenUsage({
 
 Pricing is expressed as USD per token. Use `pricingFromUsdPerMillion()` for the rates commonly
 published by providers, or `pricingFromUsdPerToken()` when the source already uses per-token
-values.
+values. Both helpers accept optional cache-read and cache-creation rates. When a catalog does not
+publish a cache rate, cache tokens fall back to the ordinary input rate rather than being treated
+as free. `CostBreakdown.inputUsd` includes all three input categories.
 
 | API                                     | Purpose                                              |
 | --------------------------------------- | ---------------------------------------------------- |

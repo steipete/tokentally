@@ -2,6 +2,7 @@
 
 ## 0.1.4 (Unreleased)
 
+- Core API: price cache-read and cache-creation tokens from catalog rates, with an ordinary-input fallback (thanks @devYRPauli)
 - Docs: rewrite the README around installation, first use, and catalog pricing
 - Tooling: refresh the formatter, linter, package validation, types, CSS, and Vite toolchain
 

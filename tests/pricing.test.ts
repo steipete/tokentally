@@ -6,9 +6,16 @@ import {
 
 describe("pricing", () => {
   it("converts per-million to per-token", () => {
-    const pricing = pricingFromUsdPerMillion({ inputUsdPerMillion: 2, outputUsdPerMillion: 10 });
+    const pricing = pricingFromUsdPerMillion({
+      inputUsdPerMillion: 2,
+      outputUsdPerMillion: 10,
+      cachedInputUsdPerMillion: 0.2,
+      cacheCreationInputUsdPerMillion: 2.5,
+    });
     expect(pricing.inputUsdPerToken).toBeCloseTo(2 / 1_000_000);
     expect(pricing.outputUsdPerToken).toBeCloseTo(10 / 1_000_000);
+    expect(pricing.cachedInputUsdPerToken).toBeCloseTo(0.2 / 1_000_000);
+    expect(pricing.cacheCreationInputUsdPerToken).toBeCloseTo(2.5 / 1_000_000);
   });
 
   it("accepts per-token pricing", () => {
