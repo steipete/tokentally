@@ -2,6 +2,8 @@
 
 ## 0.1.5 (Unreleased)
 
+- Tooling: update the formatter, linter, and pnpm
+
 ## 0.1.4 (2026-08-09)
 
 **Highlight:** cached tokens are now priced. If your workload uses prompt
