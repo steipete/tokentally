@@ -3,6 +3,7 @@
 ## 0.1.5 (Unreleased)
 
 - Tooling: update the formatter, linter, and pnpm
+- Tooling: refresh Node types, Vitest coverage, Vite, package validation, formatter, linter, pnpm, and transitive dependencies
 
 ## 0.1.4 (2026-08-09)
 
