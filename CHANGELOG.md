@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.5 (Unreleased)
+## 0.1.5 - 2026-09-05
 
 - Tooling: refresh the test and coverage runner, build and package validation tools, Node types, formatter, linter, Vite, PostCSS, pnpm, and transitive dependencies
 
