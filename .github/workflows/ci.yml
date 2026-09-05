@@ -24,6 +24,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: npm install --global pnpm@11.25.0
+      - run: npm install --global pnpm@12.3.4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
