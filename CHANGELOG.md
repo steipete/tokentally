@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.6 (Unreleased)
+## 0.1.6 (2026-09-07)
 
 **Highlights:** Detect ambiguous cached-token accounting while preserving existing default totals.
 
