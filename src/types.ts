@@ -40,3 +40,20 @@ export type CostBreakdown = {
   outputUsd: number;
   totalUsd: number;
 };
+
+/** Recoverable ambiguity in manually constructed cache-bearing usage. */
+export type TokenUsageWarning = {
+  code: "AMBIGUOUS_CACHED_INPUT";
+  message: string;
+};
+
+/** Cost estimate with one warning when cache-bearing input lacks an explicit uncached count. */
+export type CostEstimate = CostBreakdown & {
+  warnings?: TokenUsageWarning[];
+};
+
+/** Shared validation options for estimation and tallying. */
+export type CostEstimationOptions = {
+  /** Reject cache-bearing usage without an explicit uncached count. Defaults to false. */
+  requireExplicitUncachedInputTokens?: boolean;
+};

@@ -1,18 +1,56 @@
-import type { CostBreakdown, Pricing, PricingResolver, TokenUsageNormalized } from "./types.js";
+import type {
+  CostBreakdown,
+  CostEstimate,
+  CostEstimationOptions,
+  Pricing,
+  PricingResolver,
+  TokenUsageNormalized,
+  TokenUsageWarning,
+} from "./types.js";
+
+function checkCacheUsage(
+  usage: TokenUsageNormalized,
+  requireExplicitUncachedInputTokens: boolean,
+): TokenUsageWarning | undefined {
+  if (
+    usage.uncachedInputTokens != null ||
+    (usage.cachedInputTokens == null && usage.cacheCreationInputTokens == null)
+  ) {
+    return undefined;
+  }
+  const message =
+    "Cache-bearing usage is ambiguous without uncachedInputTokens. " +
+    "Normalize the original provider payload with normalizeTokenUsage() or pass an explicit " +
+    "uncachedInputTokens count excluding cache reads and cache creation.";
+  if (requireExplicitUncachedInputTokens) throw new TypeError(message);
+  return { code: "AMBIGUOUS_CACHED_INPUT", message };
+}
 
 /**
  * Estimates USD cost for a single call from normalized usage + pricing.
  *
  * Returns `null` if either `usage` or `pricing` is missing.
+ * Strict validation checks present usage even when pricing is missing.
+ * Otherwise, ambiguous usage adds one structured warning to the result; no logging occurs.
  */
 export function estimateUsdCost({
   usage,
   pricing,
+  requireExplicitUncachedInputTokens = false,
 }: {
   usage: TokenUsageNormalized | null;
   pricing: Pricing | null;
-}): CostBreakdown | null {
-  if (!usage || !pricing) return null;
+} & CostEstimationOptions): CostEstimate | null {
+  if (!usage) return null;
+  const warning = checkCacheUsage(usage, requireExplicitUncachedInputTokens);
+  if (!pricing) return null;
+  return {
+    ...calculateUsdCost(usage, pricing),
+    ...(warning ? { warnings: [warning] } : {}),
+  };
+}
+
+function calculateUsdCost(usage: TokenUsageNormalized, pricing: Pricing): CostBreakdown {
   const uncachedInputTokens = usage.uncachedInputTokens ?? usage.inputTokens;
   const cachedInputTokens = usage.cachedInputTokens ?? 0;
   const cacheCreationInputTokens = usage.cacheCreationInputTokens ?? 0;
@@ -43,6 +81,8 @@ export type TallyCall = {
  */
 export type TallyResult = {
   total: CostBreakdown | null;
+  /** One warning if any original call had ambiguous cache usage, even without pricing. */
+  warnings?: TokenUsageWarning[];
   byModel: Record<
     string,
     { calls: number; usage: TokenUsageNormalized; cost: CostBreakdown | null }
@@ -82,19 +122,27 @@ function emptyUsage(): TokenUsageNormalized {
  * Tallies costs across a list of calls, grouped by `model`.
  *
  * `resolvePricing(modelId)` can be async (e.g. catalog fetch).
+ * Validates each call before aggregation; warnings are deduplicated across the entire result.
  */
 export async function tallyCosts({
   calls,
   resolvePricing,
+  requireExplicitUncachedInputTokens = false,
 }: {
   calls: TallyCall[];
   resolvePricing: PricingResolver;
-}): Promise<TallyResult> {
+} & CostEstimationOptions): Promise<TallyResult> {
   const byModel: TallyResult["byModel"] = {};
+  let warning: TokenUsageWarning | undefined;
 
   for (const call of calls) {
     const model = call.model;
     const usage = call.usage;
+    // Aggregation can fill the uncached count from another call and hide ambiguous input.
+    if (usage) {
+      const callWarning = checkCacheUsage(usage, requireExplicitUncachedInputTokens);
+      warning ??= callWarning;
+    }
     if (!byModel[model]) {
       byModel[model] = { calls: 0, usage: emptyUsage(), cost: null };
     }
@@ -105,7 +153,7 @@ export async function tallyCosts({
   let total: CostBreakdown | null = null;
   for (const [model, row] of Object.entries(byModel)) {
     const pricing = await resolvePricing(model);
-    row.cost = estimateUsdCost({ usage: row.usage, pricing });
+    row.cost = pricing ? calculateUsdCost(row.usage, pricing) : null;
     if (row.cost) {
       if (!total) total = { inputUsd: 0, outputUsd: 0, totalUsd: 0 };
       total.inputUsd += row.cost.inputUsd;
@@ -114,5 +162,5 @@ export async function tallyCosts({
     }
   }
 
-  return { total, byModel };
+  return { total, byModel, ...(warning ? { warnings: [warning] } : {}) };
 }
