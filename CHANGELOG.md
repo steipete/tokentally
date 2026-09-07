@@ -2,6 +2,11 @@
 
 ## 0.1.6 (Unreleased)
 
+**Highlights:** Detect ambiguous cached-token accounting while preserving existing default totals.
+
+- Core API: add opt-in `requireExplicitUncachedInputTokens` validation to estimates and tallies, and return one structured warning per ambiguous result by default without console logging (thanks @devYRPauli)
+- Docs: explain inclusive OpenAI and additive Anthropic cache counts, explicit-count migration, and the planned future strict default whose major/minor version and timing remain undecided
+
 ## 0.1.5 - 2026-09-05
 
 - Tooling: refresh the test and coverage runner, build and package validation tools, Node types, formatter, linter, Vite, PostCSS, pnpm, and transitive dependencies
