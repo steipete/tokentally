@@ -2,6 +2,11 @@
 
 ## 0.1.7 (Unreleased)
 
+**Highlights:** Keep automated dependency updates working and refresh development tooling.
+
+- CI: keep pnpm on the maintained 11.x release line so Dependabot can update dependencies without a blocked native-binary bootstrap download
+- Tooling: refresh Node types, Oxfmt, Oxlint, Vite, and their transitive dependencies
+
 ## 0.1.6 (2026-09-07)
 
 **Highlights:** Detect ambiguous cached-token accounting while preserving existing default totals.
