@@ -19,6 +19,8 @@
 - `pnpm typecheck`: TypeScript typecheck without emit.
 - `pnpm check`: full gate (format + Oxlint + typecheck + coverage + build/package validation).
 
+Keep pnpm on the maintained 11.x JavaScript release line until Dependabot can bootstrap pnpm 12's native binary through its network proxy. Keep `packageManager` and the CI install version aligned.
+
 ## Coding Style & Naming Conventions
 - ESM TypeScript; keep modules small and focused.
 - Indentation: 2 spaces; line width: 100.
