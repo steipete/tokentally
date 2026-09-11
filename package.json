@@ -41,17 +41,17 @@
   },
   "devDependencies": {
     "@arethetypeswrong/core": "^0.18.5",
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.5.1",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.0",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
+    "oxfmt": "^0.67.0",
+    "oxlint": "^1.82.0",
     "oxlint-tsgolint": "^7.0.2001",
     "postcss": "^8.5.28",
     "publint": "^0.3.24",
     "tsdown": "^0.23.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.2.2",
+    "vite": "^8.3.0",
     "vitest": "^5.0.0"
   },
   "engines": {
