@@ -1,7 +1,8 @@
-import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { modelIdCandidates } from "../model-id.js";
+import { isRecord } from "../record.js";
 import type { Pricing } from "../types.js";
 
 const LITELLM_CATALOG_URL =
@@ -17,7 +18,6 @@ type LiteLlmModelRow = {
   max_output_tokens?: number | string;
   max_tokens?: number | string;
   max_input_tokens?: number | string;
-  // keep parsing minimal; file contains many additional fields
 };
 
 /** LiteLLM catalog shape: model name → pricing/limits row. */
@@ -34,12 +34,7 @@ function cachePaths(
 ): { catalogPath: string; metaPath: string } | null {
   const override = env.TOKENTALLY_CACHE_DIR?.trim();
   const home = env.HOME?.trim();
-  const cacheDir =
-    override && override.length > 0
-      ? override
-      : home
-        ? path.join(home, ".tokentally", "cache")
-        : null;
+  const cacheDir = override || (home ? path.join(home, ".tokentally", "cache") : null);
   if (!cacheDir) return null;
   return {
     catalogPath: path.join(cacheDir, "litellm-model_prices_and_context_window.json"),
@@ -65,10 +60,6 @@ function isStale(meta: CacheMeta | null, nowMs: number): boolean {
   if (!meta) return true;
   if (!Number.isFinite(meta.fetchedAtMs)) return true;
   return nowMs - meta.fetchedAtMs > CACHE_TTL_MS;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseCatalog(raw: unknown): LiteLlmCatalog | null {
@@ -102,10 +93,15 @@ export async function loadLiteLlmCatalog({
   if (!paths) return { catalog: null, source: "none" };
 
   const { catalogPath, metaPath } = paths;
-  const meta = await readJsonFile<CacheMeta>(metaPath);
-
-  const cached = existsSync(catalogPath) ? await readJsonFile<unknown>(catalogPath) : null;
-  const cachedCatalog = cached ? parseCatalog(cached) : null;
+  const [meta, cached] = await Promise.all([
+    readJsonFile<CacheMeta>(metaPath),
+    readJsonFile<unknown>(catalogPath),
+  ]);
+  const cachedCatalog = parseCatalog(cached);
+  const fallback: LiteLlmLoadResult = {
+    catalog: cachedCatalog,
+    source: cachedCatalog ? "cache" : "none",
+  };
 
   if (cachedCatalog && !isStale(meta, nowMs)) {
     return { catalog: cachedCatalog, source: "cache" };
@@ -122,15 +118,13 @@ export async function loadLiteLlmCatalog({
       return { catalog: cachedCatalog, source: "cache" };
     }
     if (!response.ok) {
-      if (cachedCatalog) return { catalog: cachedCatalog, source: "cache" };
-      return { catalog: null, source: "none" };
+      return fallback;
     }
 
     const json = (await response.json()) as unknown;
     const parsed = parseCatalog(json);
     if (!parsed) {
-      if (cachedCatalog) return { catalog: cachedCatalog, source: "cache" };
-      return { catalog: null, source: "none" };
+      return fallback;
     }
 
     await writeJsonFile(catalogPath, json);
@@ -142,22 +136,8 @@ export async function loadLiteLlmCatalog({
 
     return { catalog: parsed, source: "network" };
   } catch {
-    if (cachedCatalog) return { catalog: cachedCatalog, source: "cache" };
-    return { catalog: null, source: "none" };
+    return fallback;
   }
-}
-
-function normalizeCandidateKeys(modelId: string): string[] {
-  const normalized = modelId.trim();
-  if (normalized.length === 0) return [];
-
-  const candidates: string[] = [];
-  candidates.push(normalized);
-  if (normalized.startsWith("openai/")) candidates.push(normalized.slice("openai/".length));
-  if (normalized.startsWith("google/")) candidates.push(normalized.slice("google/".length));
-  if (normalized.startsWith("anthropic/")) candidates.push(normalized.slice("anthropic/".length));
-  if (normalized.startsWith("xai/")) candidates.push(normalized.slice("xai/".length));
-  return candidates;
 }
 
 /**
@@ -166,7 +146,7 @@ function normalizeCandidateKeys(modelId: string): string[] {
  * Skips entries where both prices are `0` (LiteLLM uses `0` for unknown/free in some rows).
  */
 export function resolveLiteLlmPricing(catalog: LiteLlmCatalog, modelId: string): Pricing | null {
-  const candidates = normalizeCandidateKeys(modelId);
+  const candidates = modelIdCandidates(modelId, ["openai", "google", "anthropic", "xai"]);
   for (const key of candidates) {
     const row = catalog[key];
     const input = row?.input_cost_per_token;
@@ -200,18 +180,10 @@ export function resolveLiteLlmPricing(catalog: LiteLlmCatalog, modelId: string):
 }
 
 function toFinitePositiveInt(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    const int = Math.floor(value);
-    return int > 0 ? int : null;
-  }
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) {
-      const int = Math.floor(parsed);
-      return int > 0 ? int : null;
-    }
-  }
-  return null;
+  const parsed = typeof value === "string" ? Number(value) : value;
+  if (typeof parsed !== "number" || !Number.isFinite(parsed)) return null;
+  const int = Math.floor(parsed);
+  return int > 0 ? int : null;
 }
 
 /**
@@ -223,13 +195,12 @@ export function resolveLiteLlmMaxOutputTokens(
   catalog: LiteLlmCatalog,
   modelId: string,
 ): number | null {
-  const candidates = normalizeCandidateKeys(modelId);
+  const candidates = modelIdCandidates(modelId, ["openai", "google", "anthropic", "xai"]);
   for (const key of candidates) {
     const row = catalog[key];
     const maxOutput = toFinitePositiveInt(row?.max_output_tokens);
     if (maxOutput) return maxOutput;
 
-    // Fallback: LiteLLM still has legacy `max_tokens` in many rows.
     const maxTokens = toFinitePositiveInt(row?.max_tokens);
     if (maxTokens) return maxTokens;
   }
@@ -241,7 +212,7 @@ export function resolveLiteLlmMaxInputTokens(
   catalog: LiteLlmCatalog,
   modelId: string,
 ): number | null {
-  const candidates = normalizeCandidateKeys(modelId);
+  const candidates = modelIdCandidates(modelId, ["openai", "google", "anthropic", "xai"]);
   for (const key of candidates) {
     const row = catalog[key];
     const maxInput = toFinitePositiveInt(row?.max_input_tokens);

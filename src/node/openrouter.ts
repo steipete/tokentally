@@ -50,59 +50,36 @@ export async function fetchOpenRouterModelCatalog({
   return models;
 }
 
-/**
- * Parses an OpenRouter price field into a finite, non-negative number.
- *
- * OpenRouter publishes prices as numeric strings in USD per token (e.g. "0.000005").
- * Numeric catalog inputs predate that live shape and are preserved as USD per 1M.
- * Returns `null` for missing/malformed values.
- */
-function parseOpenRouterPrice(value: string | number | undefined): {
-  value: number;
-  unit: "per-token" | "per-million";
-} | null {
+/** Numeric inputs retain the legacy USD-per-million contract; strings are per token. */
+function openRouterPricePerToken(value: string | number | undefined): number | undefined {
   if (typeof value === "number") {
-    return Number.isFinite(value) && value >= 0 ? { value, unit: "per-million" } : null;
+    return Number.isFinite(value) && value >= 0 ? value / 1_000_000 : undefined;
   }
   if (typeof value === "string" && value.trim() !== "") {
     const parsed = Number(value);
-    return Number.isFinite(parsed) && parsed >= 0 ? { value: parsed, unit: "per-token" } : null;
+    if (Number.isFinite(parsed) && parsed >= 0) return parsed;
   }
-  return null;
-}
-
-function openRouterPricePerToken(
-  price: ReturnType<typeof parseOpenRouterPrice>,
-): number | undefined {
-  if (price === null) return undefined;
-  return price.unit === "per-token" ? price.value : price.value / 1_000_000;
+  return undefined;
 }
 
 /**
  * Converts OpenRouter's catalog pricing to a `PricingMap`.
  *
- * OpenRouter prices are already USD per token, so they map straight through.
+ * String prices are USD per token; legacy numeric prices are USD per million.
  * Entries without valid pricing are skipped.
  */
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
   const map: PricingMap = {};
   for (const entry of catalog) {
-    const inputPrice = parseOpenRouterPrice(entry.pricing?.prompt);
-    const outputPrice = parseOpenRouterPrice(entry.pricing?.completion);
-    if (inputPrice !== null && outputPrice !== null) {
-      const cachedInputUsdPerToken = openRouterPricePerToken(
-        parseOpenRouterPrice(entry.pricing?.input_cache_read),
-      );
-      const cacheCreationInputUsdPerToken = openRouterPricePerToken(
-        parseOpenRouterPrice(entry.pricing?.input_cache_write),
-      );
-      map[entry.id] = pricingFromUsdPerToken({
-        inputUsdPerToken: openRouterPricePerToken(inputPrice)!,
-        outputUsdPerToken: openRouterPricePerToken(outputPrice)!,
-        ...(cachedInputUsdPerToken !== undefined ? { cachedInputUsdPerToken } : {}),
-        ...(cacheCreationInputUsdPerToken !== undefined ? { cacheCreationInputUsdPerToken } : {}),
-      });
-    }
+    const inputUsdPerToken = openRouterPricePerToken(entry.pricing?.prompt);
+    const outputUsdPerToken = openRouterPricePerToken(entry.pricing?.completion);
+    if (inputUsdPerToken === undefined || outputUsdPerToken === undefined) continue;
+    map[entry.id] = pricingFromUsdPerToken({
+      inputUsdPerToken,
+      outputUsdPerToken,
+      cachedInputUsdPerToken: openRouterPricePerToken(entry.pricing?.input_cache_read),
+      cacheCreationInputUsdPerToken: openRouterPricePerToken(entry.pricing?.input_cache_write),
+    });
   }
   return map;
 }

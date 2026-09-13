@@ -1,3 +1,4 @@
+import { isRecord } from "./record.js";
 import type { TokenUsageNormalized } from "./types.js";
 
 function toFiniteNonNegativeInt(value: unknown): number | null {
@@ -6,10 +7,6 @@ function toFiniteNonNegativeInt(value: unknown): number | null {
     return int >= 0 ? int : null;
   }
   return null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function fieldFromRecord(value: unknown, field: string): unknown {
