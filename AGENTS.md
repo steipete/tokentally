@@ -20,6 +20,8 @@
 - `pnpm typecheck`: TypeScript typecheck without emit.
 - `pnpm check`: full gate (format + Oxlint + typecheck + coverage + build/package validation).
 
+Keep `@types/node` on the Node 24 line so type checks respect the supported runtime floor.
+
 Keep pnpm on the maintained 11.x JavaScript release line until Dependabot can bootstrap pnpm 12's native binary through its network proxy. Keep `packageManager` and the CI install version aligned. New dependency releases must be at least 48 hours old (pnpm minimum release age and Dependabot cooldown).
 
 ## Coding Style & Naming Conventions
