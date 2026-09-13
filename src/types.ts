@@ -1,9 +1,8 @@
 /**
  * Normalized token usage shape across providers.
  *
- * Notes:
- * - Missing fields are normalized to `0` by helpers like `normalizeTokenUsage()`.
- * - `totalTokens` may be omitted by providers; callers can treat it as advisory.
+ * Missing input/output counts normalize to `0`; optional detail counts remain absent.
+ * `totalTokens` may be omitted by callers and should be treated as advisory.
  */
 export type TokenUsageNormalized = {
   inputTokens: number;

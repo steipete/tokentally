@@ -17,7 +17,11 @@ function fieldFromRecord(value: unknown, field: string): unknown {
 }
 
 function firstTokenCount(values: unknown[]): number | null {
-  return values.map(toFiniteNonNegativeInt).find((v) => v != null) ?? null;
+  for (const value of values) {
+    const count = toFiniteNonNegativeInt(value);
+    if (count !== null) return count;
+  }
+  return null;
 }
 
 /**
@@ -38,19 +42,19 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
   const inputDetails = raw.input_tokens_details ?? raw.prompt_tokens_details;
   const outputDetails = raw.output_tokens_details ?? raw.completion_tokens_details;
 
-  const inputCandidates = [
+  const inputTokens = firstTokenCount([
     raw.inputTokens,
     raw.promptTokens,
     raw.input_tokens,
     raw.prompt_tokens,
     raw.prompt_tokens_total,
-  ];
-  const outputCandidates = [
+  ]);
+  const outputTokens = firstTokenCount([
     raw.outputTokens,
     raw.completionTokens,
     raw.output_tokens,
     raw.completion_tokens,
-  ];
+  ]);
   // Anthropic reports both cache fields at the top level, and `input_tokens`
   // excludes them, so they are additive rather than a subset of the input count.
   const anthropicCacheRead = firstTokenCount([raw.cache_read_input_tokens]);
@@ -58,24 +62,19 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
     raw.cacheCreationInputTokens,
     raw.cache_creation_input_tokens,
   ]);
-  const cachedInputCandidates = [
+  const cachedInputTokens = firstTokenCount([
     raw.cachedInputTokens,
     raw.cached_input_tokens,
     anthropicCacheRead,
     fieldFromRecord(inputDetails, "cached_tokens"),
     fieldFromRecord(inputDetails, "cache_read_input_tokens"),
-  ];
-  const reasoningCandidates = [raw.reasoningTokens, raw.reasoning_tokens];
-  const nestedReasoningCandidates = [fieldFromRecord(outputDetails, "reasoning_tokens")];
-  const totalCandidates = [raw.totalTokens, raw.total_tokens];
-
-  const inputTokens = firstTokenCount(inputCandidates);
-  const outputTokens = firstTokenCount(outputCandidates);
-  const cachedInputTokens = firstTokenCount(cachedInputCandidates);
-  const topLevelReasoningTokens = firstTokenCount(reasoningCandidates);
-  const nestedReasoningTokens = firstTokenCount(nestedReasoningCandidates);
+  ]);
+  const topLevelReasoningTokens = firstTokenCount([raw.reasoningTokens, raw.reasoning_tokens]);
+  const nestedReasoningTokens = firstTokenCount([
+    fieldFromRecord(outputDetails, "reasoning_tokens"),
+  ]);
   const reasoningTokens = topLevelReasoningTokens ?? nestedReasoningTokens;
-  const totalTokens = firstTokenCount(totalCandidates);
+  const totalTokens = firstTokenCount([raw.totalTokens, raw.total_tokens]);
   const explicitUncachedInputTokens = firstTokenCount([
     raw.uncachedInputTokens,
     raw.uncached_input_tokens,
@@ -115,6 +114,6 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
     ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
     ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
     ...(reasoningTokens != null ? { reasoningTokens: normalizedReasoning } : {}),
-    ...(totalTokens != null ? { totalTokens } : { totalTokens: inferredTotal }),
+    totalTokens: totalTokens ?? inferredTotal,
   };
 }

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.7 (Unreleased)
+## Unreleased
 
 **Highlights:** Keep automated dependency updates working and refresh development tooling.
 
