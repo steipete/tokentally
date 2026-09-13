@@ -132,7 +132,7 @@ export async function tallyCosts({
   calls: TallyCall[];
   resolvePricing: PricingResolver;
 } & CostEstimationOptions): Promise<TallyResult> {
-  const byModel: TallyResult["byModel"] = {};
+  const rows = new Map<string, TallyResult["byModel"][string]>();
   let warning: TokenUsageWarning | undefined;
 
   for (const call of calls) {
@@ -143,13 +143,16 @@ export async function tallyCosts({
       const callWarning = checkCacheUsage(usage, requireExplicitUncachedInputTokens);
       warning ??= callWarning;
     }
-    if (!byModel[model]) {
-      byModel[model] = { calls: 0, usage: emptyUsage(), cost: null };
+    let row = rows.get(model);
+    if (!row) {
+      row = { calls: 0, usage: emptyUsage(), cost: null };
+      rows.set(model, row);
     }
-    byModel[model].calls += 1;
-    if (usage) byModel[model].usage = addUsage(byModel[model].usage, usage);
+    row.calls += 1;
+    if (usage) row.usage = addUsage(row.usage, usage);
   }
 
+  const byModel = Object.fromEntries(rows);
   let total: CostBreakdown | null = null;
   for (const [model, row] of Object.entries(byModel)) {
     const pricing = await resolvePricing(model);

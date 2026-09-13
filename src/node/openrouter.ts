@@ -1,5 +1,5 @@
 import { pricingFromUsdPerToken } from "../pricing.js";
-import type { PricingMap } from "../types.js";
+import type { Pricing, PricingMap } from "../types.js";
 import type { FetchFn } from "./types.js";
 
 const OPENROUTER_MODELS_ENDPOINT = "https://openrouter.ai/api/v1/models";
@@ -69,19 +69,22 @@ function openRouterPricePerToken(value: string | number | undefined): number | u
  * Entries without valid pricing are skipped.
  */
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
-  const map: PricingMap = {};
+  const entries = new Map<string, Pricing>();
   for (const entry of catalog) {
     const inputUsdPerToken = openRouterPricePerToken(entry.pricing?.prompt);
     const outputUsdPerToken = openRouterPricePerToken(entry.pricing?.completion);
     if (inputUsdPerToken === undefined || outputUsdPerToken === undefined) continue;
-    map[entry.id] = pricingFromUsdPerToken({
-      inputUsdPerToken,
-      outputUsdPerToken,
-      cachedInputUsdPerToken: openRouterPricePerToken(entry.pricing?.input_cache_read),
-      cacheCreationInputUsdPerToken: openRouterPricePerToken(entry.pricing?.input_cache_write),
-    });
+    entries.set(
+      entry.id,
+      pricingFromUsdPerToken({
+        inputUsdPerToken,
+        outputUsdPerToken,
+        cachedInputUsdPerToken: openRouterPricePerToken(entry.pricing?.input_cache_read),
+        cacheCreationInputUsdPerToken: openRouterPricePerToken(entry.pricing?.input_cache_write),
+      }),
+    );
   }
-  return map;
+  return Object.fromEntries(entries);
 }
 
 /**

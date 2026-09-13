@@ -77,7 +77,8 @@ as free. `CostBreakdown.inputUsd` includes all three input categories.
 
 `tallyCosts()` accepts a synchronous or asynchronous pricing resolver. Calls without usage still
 count in the per-model breakdown; models without pricing retain their usage but have a `null`
-cost and do not contribute to the total.
+cost and do not contribute to the total. Model maps use their own entries only; IDs such as
+`constructor` and `__proto__` are treated as ordinary model IDs.
 
 ### Cache ambiguity and strict validation
 

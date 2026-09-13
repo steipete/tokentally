@@ -148,7 +148,7 @@ export async function loadLiteLlmCatalog({
 export function resolveLiteLlmPricing(catalog: LiteLlmCatalog, modelId: string): Pricing | null {
   const candidates = modelIdCandidates(modelId, ["openai", "google", "anthropic", "xai"]);
   for (const key of candidates) {
-    const row = catalog[key];
+    const row = Object.hasOwn(catalog, key) ? catalog[key] : undefined;
     const input = row?.input_cost_per_token;
     const output = row?.output_cost_per_token;
     if (
@@ -197,7 +197,7 @@ export function resolveLiteLlmMaxOutputTokens(
 ): number | null {
   const candidates = modelIdCandidates(modelId, ["openai", "google", "anthropic", "xai"]);
   for (const key of candidates) {
-    const row = catalog[key];
+    const row = Object.hasOwn(catalog, key) ? catalog[key] : undefined;
     const maxOutput = toFinitePositiveInt(row?.max_output_tokens);
     if (maxOutput) return maxOutput;
 
@@ -214,7 +214,7 @@ export function resolveLiteLlmMaxInputTokens(
 ): number | null {
   const candidates = modelIdCandidates(modelId, ["openai", "google", "anthropic", "xai"]);
   for (const key of candidates) {
-    const row = catalog[key];
+    const row = Object.hasOwn(catalog, key) ? catalog[key] : undefined;
     const maxInput = toFinitePositiveInt(row?.max_input_tokens);
     if (maxInput) return maxInput;
   }
