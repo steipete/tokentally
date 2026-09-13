@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { onTestFinished } from "vitest";
 
 import {
   loadLiteLlmCatalog,
@@ -30,6 +31,7 @@ describe("tokentally/node litellm", () => {
 
   it("caches catalog under TOKENTALLY_CACHE_DIR", async () => {
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "tokentally-"));
+    onTestFinished(() => fs.rm(tmp, { recursive: true, force: true }));
     let calls = 0;
     const fetchImpl: typeof fetch = async () => {
       calls += 1;
@@ -45,7 +47,7 @@ describe("tokentally/node litellm", () => {
       );
     };
 
-    const env = { TOKENTALLY_CACHE_DIR: tmp } as Record<string, string | undefined>;
+    const env = { TOKENTALLY_CACHE_DIR: tmp };
     const first = await loadLiteLlmCatalog({ env, fetchImpl, nowMs: 1 });
     const second = await loadLiteLlmCatalog({ env, fetchImpl, nowMs: 2 });
 
