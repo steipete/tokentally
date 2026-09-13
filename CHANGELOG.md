@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-**Highlights:** Keep automated dependency updates working and refresh development tooling.
+**Highlights:** Fix model-key handling and refresh development tooling.
 
+- Core API: handle model IDs such as `__proto__` and `constructor` safely in tallies and catalog maps, and ignore inherited lookup entries
 - CI: validate built package exports on Node 24 and 26, build once per job, and enforce a two-day dependency release cooldown
 - Tooling: align Node type definitions with the supported Node 24 runtime floor
 - CI: keep pnpm on the maintained 11.x release line so Dependabot can update dependencies without a blocked native-binary bootstrap download

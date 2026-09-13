@@ -90,7 +90,7 @@ export function resolvePricingFromMap(map: PricingMap, modelId: string): Pricing
     "mistral",
   ]);
   for (const key of candidates) {
-    const pricing = map[key];
+    const pricing = Object.hasOwn(map, key) ? map[key] : undefined;
     if (pricing) return pricing;
   }
   return null;
