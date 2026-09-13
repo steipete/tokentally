@@ -151,7 +151,9 @@ undecided. This release keeps strict validation opt-in and preserves existing nu
 ## Load catalog pricing in Node.js
 
 Import catalog helpers from `tokentally/node`. The LiteLLM loader uses a seven-day disk cache at
-`$HOME/.tokentally/cache`; set `TOKENTALLY_CACHE_DIR` to put it elsewhere.
+`$HOME/.tokentally/cache`; set `TOKENTALLY_CACHE_DIR` to put it elsewhere. Disk caching is optional:
+when no cache directory is configured or saving fails, a successful fetch still returns network
+pricing. Failed refreshes fall back to a readable cached catalog.
 
 ```js
 import { loadLiteLlmCatalog, resolveLiteLlmPricing } from "tokentally/node";
