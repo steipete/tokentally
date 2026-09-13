@@ -185,7 +185,8 @@ pnpm install
 pnpm check
 ```
 
-`pnpm check` runs formatting, linting, type checks, tests with coverage, and the package build.
+`pnpm check` runs formatting, linting, type checks, tests with coverage, the package build, and a
+smoke test of the built public exports. CI runs the full gate on Node.js 24 and 26.
 
 ## License
 
