@@ -1,3 +1,4 @@
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -25,13 +26,14 @@ export type LiteLlmCatalog = Record<string, LiteLlmModelRow | undefined>;
 
 type CacheMeta = {
   fetchedAtMs: number;
+  catalogSha256?: string;
   etag?: string;
   lastModified?: string;
 };
 
-function cachePaths(
-  env: Record<string, string | undefined>,
-): { catalogPath: string; metaPath: string } | null {
+type CachePaths = { catalogPath: string; metaPath: string };
+
+function cachePaths(env: Record<string, string | undefined>): CachePaths | null {
   const override = env.TOKENTALLY_CACHE_DIR?.trim();
   const home = env.HOME?.trim();
   const cacheDir = override || (home ? path.join(home, ".tokentally", "cache") : null);
@@ -42,10 +44,10 @@ function cachePaths(
   };
 }
 
-async function readJsonFile<T>(filePath: string): Promise<T | null> {
+async function readJsonFile(filePath: string): Promise<unknown> {
   try {
     const raw = await fs.readFile(filePath, "utf8");
-    return JSON.parse(raw) as T;
+    return JSON.parse(raw) as unknown;
   } catch {
     return null;
   }
@@ -53,12 +55,56 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
 
 async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  const temporaryPath = `${filePath}.${randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+    await fs.rename(temporaryPath, filePath);
+  } finally {
+    await fs.rm(temporaryPath, { force: true });
+  }
+}
+
+function catalogSha256(catalog: LiteLlmCatalog): string {
+  return createHash("sha256").update(JSON.stringify(catalog)).digest("hex");
+}
+
+async function updateCache(
+  paths: CachePaths | null,
+  meta: CacheMeta,
+  catalog?: LiteLlmCatalog,
+): Promise<void> {
+  if (!paths) return;
+  try {
+    // Do not advance validators/freshness unless the corresponding catalog was saved.
+    if (catalog) await writeJsonFile(paths.catalogPath, catalog);
+    await writeJsonFile(
+      paths.metaPath,
+      catalog ? { ...meta, catalogSha256: catalogSha256(catalog) } : meta,
+    );
+  } catch {
+    // Disk caching is optional; a valid network response remains usable if persistence fails.
+  }
+}
+
+function parseCacheMeta(raw: unknown): CacheMeta | null {
+  if (!isRecord(raw) || typeof raw.fetchedAtMs !== "number" || !Number.isFinite(raw.fetchedAtMs)) {
+    return null;
+  }
+  if (
+    raw.catalogSha256 !== undefined &&
+    (typeof raw.catalogSha256 !== "string" || !/^[a-f0-9]{64}$/.test(raw.catalogSha256))
+  )
+    return null;
+  return {
+    fetchedAtMs: raw.fetchedAtMs,
+    ...(typeof raw.catalogSha256 === "string" ? { catalogSha256: raw.catalogSha256 } : {}),
+    ...(typeof raw.etag === "string" ? { etag: raw.etag } : {}),
+    ...(typeof raw.lastModified === "string" ? { lastModified: raw.lastModified } : {}),
+  };
 }
 
 function isStale(meta: CacheMeta | null, nowMs: number): boolean {
   if (!meta) return true;
-  if (!Number.isFinite(meta.fetchedAtMs)) return true;
   return nowMs - meta.fetchedAtMs > CACHE_TTL_MS;
 }
 
@@ -90,31 +136,38 @@ export async function loadLiteLlmCatalog({
   nowMs?: number;
 }): Promise<LiteLlmLoadResult> {
   const paths = cachePaths(env);
-  if (!paths) return { catalog: null, source: "none" };
-
-  const { catalogPath, metaPath } = paths;
-  const [meta, cached] = await Promise.all([
-    readJsonFile<CacheMeta>(metaPath),
-    readJsonFile<unknown>(catalogPath),
-  ]);
+  const [rawMeta, cached] = paths
+    ? await Promise.all([readJsonFile(paths.metaPath), readJsonFile(paths.catalogPath)])
+    : [null, null];
+  const meta = parseCacheMeta(rawMeta);
   const cachedCatalog = parseCatalog(cached);
+  const validatorsMatch =
+    cachedCatalog !== null && meta?.catalogSha256 === catalogSha256(cachedCatalog);
+  // Legacy metadata retains its TTL, but only digest-bound validators may request a 304.
+  const freshnessMeta = meta?.catalogSha256 === undefined || validatorsMatch ? meta : null;
   const fallback: LiteLlmLoadResult = {
     catalog: cachedCatalog,
     source: cachedCatalog ? "cache" : "none",
   };
 
-  if (cachedCatalog && !isStale(meta, nowMs)) {
+  if (cachedCatalog && !isStale(freshnessMeta, nowMs)) {
     return { catalog: cachedCatalog, source: "cache" };
   }
 
   const headers: Record<string, string> = {};
-  if (meta?.etag) headers["if-none-match"] = meta.etag;
-  if (meta?.lastModified) headers["if-modified-since"] = meta.lastModified;
+  if (validatorsMatch) {
+    if (meta?.etag) headers["if-none-match"] = meta.etag;
+    if (meta?.lastModified) headers["if-modified-since"] = meta.lastModified;
+  }
 
   try {
     const response = await fetchImpl(LITELLM_CATALOG_URL, { headers });
-    if (response.status === 304 && cachedCatalog) {
-      await writeJsonFile(metaPath, { ...meta, fetchedAtMs: nowMs } satisfies CacheMeta);
+    if (response.status === 304 && validatorsMatch && cachedCatalog) {
+      await updateCache(paths, {
+        ...meta,
+        fetchedAtMs: nowMs,
+        catalogSha256: catalogSha256(cachedCatalog),
+      });
       return { catalog: cachedCatalog, source: "cache" };
     }
     if (!response.ok) {
@@ -127,12 +180,15 @@ export async function loadLiteLlmCatalog({
       return fallback;
     }
 
-    await writeJsonFile(catalogPath, json);
-    await writeJsonFile(metaPath, {
-      fetchedAtMs: nowMs,
-      etag: response.headers.get("etag") ?? undefined,
-      lastModified: response.headers.get("last-modified") ?? undefined,
-    } satisfies CacheMeta);
+    await updateCache(
+      paths,
+      {
+        fetchedAtMs: nowMs,
+        etag: response.headers.get("etag") ?? undefined,
+        lastModified: response.headers.get("last-modified") ?? undefined,
+      },
+      parsed,
+    );
 
     return { catalog: parsed, source: "network" };
   } catch {

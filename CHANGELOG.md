@@ -4,6 +4,7 @@
 
 **Highlights:** Fix model-key handling and refresh development tooling.
 
+- Node helpers: retain fetched LiteLLM pricing when disk caching is unavailable and avoid conditional requests without a usable cached catalog
 - Core API: handle model IDs such as `__proto__` and `constructor` safely in tallies and catalog maps, and ignore inherited lookup entries
 - CI: validate built package exports on Node 24 and 26, build once per job, and enforce a two-day dependency release cooldown
 - Tooling: align Node type definitions with the supported Node 24 runtime floor
