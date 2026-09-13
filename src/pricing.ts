@@ -1,4 +1,11 @@
+import { modelIdCandidates } from "./model-id.js";
 import type { Pricing, PricingMap } from "./types.js";
+
+function validateRate(value: number, field: string): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${field} must be a finite, non-negative number`);
+  }
+}
 
 /**
  * Convenience helper for pricing tables that publish USD per 1M tokens.
@@ -16,23 +23,13 @@ export function pricingFromUsdPerMillion({
   cachedInputUsdPerMillion?: number;
   cacheCreationInputUsdPerMillion?: number;
 }): Pricing {
-  if (!Number.isFinite(inputUsdPerMillion) || inputUsdPerMillion < 0) {
-    throw new Error("inputUsdPerMillion must be a finite, non-negative number");
+  validateRate(inputUsdPerMillion, "inputUsdPerMillion");
+  validateRate(outputUsdPerMillion, "outputUsdPerMillion");
+  if (cachedInputUsdPerMillion !== undefined) {
+    validateRate(cachedInputUsdPerMillion, "cachedInputUsdPerMillion");
   }
-  if (!Number.isFinite(outputUsdPerMillion) || outputUsdPerMillion < 0) {
-    throw new Error("outputUsdPerMillion must be a finite, non-negative number");
-  }
-  if (
-    cachedInputUsdPerMillion !== undefined &&
-    (!Number.isFinite(cachedInputUsdPerMillion) || cachedInputUsdPerMillion < 0)
-  ) {
-    throw new Error("cachedInputUsdPerMillion must be a finite, non-negative number");
-  }
-  if (
-    cacheCreationInputUsdPerMillion !== undefined &&
-    (!Number.isFinite(cacheCreationInputUsdPerMillion) || cacheCreationInputUsdPerMillion < 0)
-  ) {
-    throw new Error("cacheCreationInputUsdPerMillion must be a finite, non-negative number");
+  if (cacheCreationInputUsdPerMillion !== undefined) {
+    validateRate(cacheCreationInputUsdPerMillion, "cacheCreationInputUsdPerMillion");
   }
   return {
     inputUsdPerToken: inputUsdPerMillion / 1_000_000,
@@ -62,23 +59,13 @@ export function pricingFromUsdPerToken({
   cachedInputUsdPerToken?: number;
   cacheCreationInputUsdPerToken?: number;
 }): Pricing {
-  if (!Number.isFinite(inputUsdPerToken) || inputUsdPerToken < 0) {
-    throw new Error("inputUsdPerToken must be a finite, non-negative number");
+  validateRate(inputUsdPerToken, "inputUsdPerToken");
+  validateRate(outputUsdPerToken, "outputUsdPerToken");
+  if (cachedInputUsdPerToken !== undefined) {
+    validateRate(cachedInputUsdPerToken, "cachedInputUsdPerToken");
   }
-  if (!Number.isFinite(outputUsdPerToken) || outputUsdPerToken < 0) {
-    throw new Error("outputUsdPerToken must be a finite, non-negative number");
-  }
-  if (
-    cachedInputUsdPerToken !== undefined &&
-    (!Number.isFinite(cachedInputUsdPerToken) || cachedInputUsdPerToken < 0)
-  ) {
-    throw new Error("cachedInputUsdPerToken must be a finite, non-negative number");
-  }
-  if (
-    cacheCreationInputUsdPerToken !== undefined &&
-    (!Number.isFinite(cacheCreationInputUsdPerToken) || cacheCreationInputUsdPerToken < 0)
-  ) {
-    throw new Error("cacheCreationInputUsdPerToken must be a finite, non-negative number");
+  if (cacheCreationInputUsdPerToken !== undefined) {
+    validateRate(cacheCreationInputUsdPerToken, "cacheCreationInputUsdPerToken");
   }
   return {
     inputUsdPerToken,
@@ -88,28 +75,20 @@ export function pricingFromUsdPerToken({
   };
 }
 
-function normalizeCandidateKeys(modelId: string): string[] {
-  const trimmed = modelId.trim();
-  if (!trimmed) return [];
-
-  const candidates = [trimmed];
-  if (trimmed.startsWith("openai/")) candidates.push(trimmed.slice("openai/".length));
-  if (trimmed.startsWith("google/")) candidates.push(trimmed.slice("google/".length));
-  if (trimmed.startsWith("anthropic/")) candidates.push(trimmed.slice("anthropic/".length));
-  if (trimmed.startsWith("xai/")) candidates.push(trimmed.slice("xai/".length));
-  if (trimmed.startsWith("meta/")) candidates.push(trimmed.slice("meta/".length));
-  if (trimmed.startsWith("mistral/")) candidates.push(trimmed.slice("mistral/".length));
-
-  return candidates;
-}
-
 /**
  * Resolves pricing from a map, trying common key variants.
  *
  * Example: if you pass `openai/gpt-5.2`, it will also try `gpt-5.2`.
  */
 export function resolvePricingFromMap(map: PricingMap, modelId: string): Pricing | null {
-  const candidates = normalizeCandidateKeys(modelId);
+  const candidates = modelIdCandidates(modelId, [
+    "openai",
+    "google",
+    "anthropic",
+    "xai",
+    "meta",
+    "mistral",
+  ]);
   for (const key of candidates) {
     const pricing = map[key];
     if (pricing) return pricing;
