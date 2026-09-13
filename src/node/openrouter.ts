@@ -1,4 +1,5 @@
 import { pricingFromUsdPerToken } from "../pricing.js";
+import { isRecord } from "../record.js";
 import type { Pricing, PricingMap } from "../types.js";
 import type { FetchFn } from "./types.js";
 
@@ -16,6 +17,23 @@ export type OpenRouterModelInfo = {
     input_cache_write?: string | number;
   };
 };
+
+function parseModelInfo(value: unknown): OpenRouterModelInfo | null {
+  if (!isRecord(value) || typeof value.id !== "string") return null;
+  const model: OpenRouterModelInfo = { ...value, id: value.id };
+  if (typeof value.context_length !== "number") delete model.context_length;
+  if (isRecord(value.pricing)) {
+    const pricing = { ...value.pricing };
+    for (const key of ["prompt", "completion", "input_cache_read", "input_cache_write"]) {
+      const rate = pricing[key];
+      if (typeof rate !== "string" && typeof rate !== "number") delete pricing[key];
+    }
+    model.pricing = pricing;
+  } else {
+    delete model.pricing;
+  }
+  return model;
+}
 
 const catalogCache = new Map<string, { fetchedAt: number; models: OpenRouterModelInfo[] }>();
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
@@ -44,9 +62,12 @@ export async function fetchOpenRouterModelCatalog({
   if (!response.ok) {
     throw new Error(`Failed to load OpenRouter models (${response.status})`);
   }
-  const json = (await response.json()) as { data?: OpenRouterModelInfo[] };
-  const models = json?.data ?? [];
-  catalogCache.set(apiKey, { fetchedAt: now, models });
+  const json: unknown = await response.json();
+  if (!isRecord(json) || !Array.isArray(json.data)) {
+    throw new Error("Invalid OpenRouter models response: expected a data array");
+  }
+  const models = json.data.map(parseModelInfo).filter((model) => model !== null);
+  catalogCache.set(apiKey, { fetchedAt: Date.now(), models });
   return models;
 }
 
@@ -71,6 +92,7 @@ function openRouterPricePerToken(value: string | number | undefined): number | u
 export function openRouterPricingMapFromCatalog(catalog: OpenRouterModelInfo[]): PricingMap {
   const entries = new Map<string, Pricing>();
   for (const entry of catalog) {
+    if (!isRecord(entry) || typeof entry.id !== "string") continue;
     const inputUsdPerToken = openRouterPricePerToken(entry.pricing?.prompt);
     const outputUsdPerToken = openRouterPricePerToken(entry.pricing?.completion);
     if (inputUsdPerToken === undefined || outputUsdPerToken === undefined) continue;

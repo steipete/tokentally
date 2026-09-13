@@ -163,7 +163,9 @@ const pricing = catalog ? resolveLiteLlmPricing(catalog, "openai/gpt-5.2") : nul
 console.log({ source, pricing });
 ```
 
-OpenRouter requires an API key supplied by your application:
+OpenRouter requires an API key supplied by your application. Its loader rejects malformed
+response collections before caching, skips malformed model rows, and caches validated results
+for five minutes from fetch completion:
 
 ```js
 import { resolvePricingFromMap } from "tokentally";
