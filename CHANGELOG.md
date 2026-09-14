@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7 (2026-09-13)
 
 **Highlights:** Keep catalog pricing available, fix model-key accounting, and refresh development tooling.
 
