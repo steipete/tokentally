@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.1.8 (Unreleased)
+## 0.2.0 (Unreleased)
+
+- Core API: require explicit uncached counts for cache-bearing usage in types, estimates, and tallies by default, preventing ambiguous cached-token double billing; normalize original provider payloads with `normalizeTokenUsage()` (thanks @devYRPauli for the report)
+
+### Compatibility
+
+- Breaking: ambiguous manual cache-bearing usage now throws a `TypeError` (or rejects a tally) instead of returning an inflated estimate with a warning, even without pricing; migrate by normalizing the original provider payload or supplying `uncachedInputTokens`
+- Keep `requireExplicitUncachedInputTokens` as a deprecated no-op alias: omitted, `true`, and `false` all enforce validation; deprecated warning types and result fields remain for source compatibility but warnings are no longer emitted
+- Provider-normalized usage, explicit uncached counts, and cache-free usage retain their existing accounting
 
 ## 0.1.7 (2026-09-13)
 

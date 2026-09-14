@@ -104,13 +104,17 @@ export function normalizeTokenUsage(raw: unknown): TokenUsageNormalized | null {
     (cacheCreationInputTokens ?? 0) +
     (topLevelReasoningTokens != null ? normalizedReasoning : 0);
 
-  return {
+  const counts = {
     inputTokens: normalizedInput,
     outputTokens: normalizedOutput,
-    ...(uncachedInputTokens != null ? { uncachedInputTokens } : {}),
-    ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
-    ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
     ...(reasoningTokens != null ? { reasoningTokens: normalizedReasoning } : {}),
     totalTokens: totalTokens ?? inferredTotal,
+  };
+  if (uncachedInputTokens == null) return counts;
+  return {
+    ...counts,
+    uncachedInputTokens,
+    ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+    ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
   };
 }
