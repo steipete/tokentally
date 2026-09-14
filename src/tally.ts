@@ -8,46 +8,37 @@ import type {
   TokenUsageWarning,
 } from "./types.js";
 
-function checkCacheUsage(
-  usage: TokenUsageNormalized,
-  requireExplicitUncachedInputTokens: boolean,
-): TokenUsageWarning | undefined {
+function checkCacheUsage(usage: TokenUsageNormalized): void {
   if (
     usage.uncachedInputTokens != null ||
     (usage.cachedInputTokens == null && usage.cacheCreationInputTokens == null)
   ) {
-    return undefined;
+    return;
   }
   const message =
     "Cache-bearing usage is ambiguous without uncachedInputTokens. " +
     "Normalize the original provider payload with normalizeTokenUsage() or pass an explicit " +
     "uncachedInputTokens count excluding cache reads and cache creation.";
-  if (requireExplicitUncachedInputTokens) throw new TypeError(message);
-  return { code: "AMBIGUOUS_CACHED_INPUT", message };
+  throw new TypeError(message);
 }
 
 /**
  * Estimates USD cost for a single call from normalized usage + pricing.
  *
- * Returns `null` if either `usage` or `pricing` is missing.
- * Strict validation checks present usage even when pricing is missing.
- * Otherwise, ambiguous usage adds one structured warning to the result; no logging occurs.
+ * Throws `TypeError` for cache-bearing usage without an explicit uncached count,
+ * even when pricing is missing. Otherwise returns `null` for missing usage or pricing.
  */
 export function estimateUsdCost({
   usage,
   pricing,
-  requireExplicitUncachedInputTokens = false,
 }: {
   usage: TokenUsageNormalized | null;
   pricing: Pricing | null;
 } & CostEstimationOptions): CostEstimate | null {
   if (!usage) return null;
-  const warning = checkCacheUsage(usage, requireExplicitUncachedInputTokens);
+  checkCacheUsage(usage);
   if (!pricing) return null;
-  return {
-    ...calculateUsdCost(usage, pricing),
-    ...(warning ? { warnings: [warning] } : {}),
-  };
+  return calculateUsdCost(usage, pricing);
 }
 
 function calculateUsdCost(usage: TokenUsageNormalized, pricing: Pricing): CostBreakdown {
@@ -81,7 +72,7 @@ export type TallyCall = {
  */
 export type TallyResult = {
   total: CostBreakdown | null;
-  /** One warning if any original call had ambiguous cache usage, even without pricing. */
+  /** @deprecated Ambiguous usage now rejects the tally; warnings are no longer emitted. */
   warnings?: TokenUsageWarning[];
   byModel: Record<
     string,
@@ -103,14 +94,18 @@ function addUsage(a: TokenUsageNormalized, b: TokenUsageNormalized): TokenUsageN
       ? (a.cacheCreationInputTokens ?? 0) + (b.cacheCreationInputTokens ?? 0)
       : undefined;
 
-  return {
+  const counts = {
     inputTokens: a.inputTokens + b.inputTokens,
     outputTokens: a.outputTokens + b.outputTokens,
-    ...(uncachedInputTokens != null ? { uncachedInputTokens } : {}),
-    ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
-    ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
     reasoningTokens: (a.reasoningTokens ?? 0) + (b.reasoningTokens ?? 0),
     totalTokens: (a.totalTokens ?? 0) + (b.totalTokens ?? 0),
+  };
+  if (uncachedInputTokens == null) return counts;
+  return {
+    ...counts,
+    uncachedInputTokens,
+    ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+    ...(cacheCreationInputTokens != null ? { cacheCreationInputTokens } : {}),
   };
 }
 
@@ -122,27 +117,22 @@ function emptyUsage(): TokenUsageNormalized {
  * Tallies costs across a list of calls, grouped by `model`.
  *
  * `resolvePricing(modelId)` can be async (e.g. catalog fetch).
- * Validates each call before aggregation; warnings are deduplicated across the entire result.
+ * Rejects cache-bearing calls without explicit uncached counts before pricing resolution.
  */
 export async function tallyCosts({
   calls,
   resolvePricing,
-  requireExplicitUncachedInputTokens = false,
 }: {
   calls: TallyCall[];
   resolvePricing: PricingResolver;
 } & CostEstimationOptions): Promise<TallyResult> {
   const rows = new Map<string, TallyResult["byModel"][string]>();
-  let warning: TokenUsageWarning | undefined;
 
   for (const call of calls) {
     const model = call.model;
     const usage = call.usage;
     // Aggregation can fill the uncached count from another call and hide ambiguous input.
-    if (usage) {
-      const callWarning = checkCacheUsage(usage, requireExplicitUncachedInputTokens);
-      warning ??= callWarning;
-    }
+    if (usage) checkCacheUsage(usage);
     let row = rows.get(model);
     if (!row) {
       row = { calls: 0, usage: emptyUsage(), cost: null };
@@ -165,5 +155,5 @@ export async function tallyCosts({
     }
   }
 
-  return { total, byModel, ...(warning ? { warnings: [warning] } : {}) };
+  return { total, byModel };
 }

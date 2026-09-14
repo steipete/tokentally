@@ -3,17 +3,27 @@
  *
  * Missing input/output counts normalize to `0`; optional detail counts remain absent.
  * `totalTokens` may be omitted by callers and should be treated as advisory.
+ * Cache-bearing usage requires an explicit uncached count. Normalize the original
+ * provider payload with `normalizeTokenUsage()` to derive it from provider semantics.
  */
 export type TokenUsageNormalized = {
   inputTokens: number;
   outputTokens: number;
-  /** Input tokens excluding cache reads and cache creation, when cache usage is known. */
-  uncachedInputTokens?: number;
-  cachedInputTokens?: number;
-  cacheCreationInputTokens?: number;
   reasoningTokens?: number;
   totalTokens?: number;
-};
+} & (
+  | {
+      /** Input tokens excluding cache reads and cache creation. */
+      uncachedInputTokens: number;
+      cachedInputTokens?: number;
+      cacheCreationInputTokens?: number;
+    }
+  | {
+      uncachedInputTokens?: number;
+      cachedInputTokens?: never;
+      cacheCreationInputTokens?: never;
+    }
+);
 
 /** Per-token USD pricing. */
 export type Pricing = {
@@ -40,19 +50,20 @@ export type CostBreakdown = {
   totalUsd: number;
 };
 
-/** Recoverable ambiguity in manually constructed cache-bearing usage. */
+/** @deprecated Ambiguous cache-bearing usage now throws instead of returning a warning. */
 export type TokenUsageWarning = {
   code: "AMBIGUOUS_CACHED_INPUT";
   message: string;
 };
 
-/** Cost estimate with one warning when cache-bearing input lacks an explicit uncached count. */
+/** USD cost estimate. */
 export type CostEstimate = CostBreakdown & {
+  /** @deprecated Ambiguous usage now throws; warnings are no longer emitted. */
   warnings?: TokenUsageWarning[];
 };
 
 /** Shared validation options for estimation and tallying. */
 export type CostEstimationOptions = {
-  /** Reject cache-bearing usage without an explicit uncached count. Defaults to false. */
+  /** @deprecated No-op compatibility alias. Explicit uncached counts are always required for cache-bearing usage. */
   requireExplicitUncachedInputTokens?: boolean;
 };

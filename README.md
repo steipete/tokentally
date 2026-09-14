@@ -80,7 +80,7 @@ count in the per-model breakdown; models without pricing retain their usage but 
 cost and do not contribute to the total. Model maps use their own entries only; IDs such as
 `constructor` and `__proto__` are treated as ordinary model IDs.
 
-### Cache ambiguity and strict validation
+### Cache accounting
 
 When constructing usage manually, supply `uncachedInputTokens` whenever either
 `cachedInputTokens` or `cacheCreationInputTokens` is present, including a zero cache count.
@@ -95,15 +95,9 @@ For example, with input at $1, output at $2, and cache reads at $0.10 per millio
 | OpenAI inclusive input   | 1,000 | 400    | 600      | $0.00074                   |
 | Anthropic additive input | 1,000 | 400    | 1,000    | $0.00114                   |
 
-The default still treats `inputTokens` as uncached when `uncachedInputTokens` is missing. The
-ambiguous manual object `{ inputTokens: 1000, outputTokens: 50, cachedInputTokens: 400 }`
-therefore retains its $0.00114 estimate. The result now includes a single structured warning:
-`warnings: [{ code: "AMBIGUOUS_CACHED_INPUT", message: "..." }]`. Inspect `cost?.warnings` from
-`estimateUsdCost()` or `result.warnings` from `tallyCosts()`. Warnings are omitted for unambiguous
-usage and deduplicated to one entry per result, even when a tally contains many ambiguous calls.
-They are returned on each affected invocation, never written to the console or stderr.
-
-Opt into rejection with `requireExplicitUncachedInputTokens: true` on either function:
+`estimateUsdCost()` throws a `TypeError` for cache-bearing usage without an explicit
+`uncachedInputTokens`; `tallyCosts()` rejects its promise. The exported `TokenUsageNormalized`
+type requires this count too. Normalize the **original provider payload** to derive it correctly:
 
 ```js
 import {
@@ -123,30 +117,40 @@ const usage = normalizeTokenUsage({
   completion_tokens: 50,
   prompt_tokens_details: { cached_tokens: 400 },
 });
-const cost = estimateUsdCost({ usage, pricing, requireExplicitUncachedInputTokens: true });
-// cost.totalUsd is 0.00074; no warnings.
+const cost = estimateUsdCost({ usage, pricing });
+// usage.uncachedInputTokens is 600; cost.totalUsd is 0.00074.
 const result = await tallyCosts({
   calls: [{ model: "example/model", usage }],
   resolvePricing: () => pricing,
-  requireExplicitUncachedInputTokens: true,
 });
-// result.total.totalUsd is 0.00074; no warnings.
+// result.total.totalUsd is 0.00074.
 ```
 
-Strict estimation throws a `TypeError` for ambiguous input; strict tallying rejects its promise.
-The error explains how to normalize the original provider payload or pass an explicit uncached
-count. Validation checks every original call before aggregation and pricing resolution, so mixing
-normalized and ambiguous manual calls cannot hide the ambiguity. It also applies when pricing is
-missing. Default estimation with missing usage or pricing still returns `null`; a default tally
-can return warnings even when its total is `null` because no pricing was found.
+For manual OpenAI usage in the table above, pass `uncachedInputTokens: 600`; manual Anthropic
+usage needs `uncachedInputTokens: 1000`. Passing an already flattened ambiguous object through
+the normalizer cannot recover lost provider semantics. The estimator does not guess a provider
+or automatically subtract cached tokens.
 
-Normalize the **original provider payload**, not an already flattened ambiguous object: lost
-provider semantics cannot be recovered. For manual OpenAI usage in the table above, passing
-`uncachedInputTokens: 600` is sufficient; manual Anthropic usage needs `uncachedInputTokens: 1000`.
+Validation checks every original call before pricing resolution and checks each call before
+aggregation, so mixing normalized and ambiguous manual calls cannot hide the ambiguity. It also
+applies when pricing is missing. Missing usage still returns `null`; valid usage with missing
+pricing returns `null`, and an unpriced tally retains its usage with a `null` total.
 
-Ambiguous manual usage is deprecated. Strict validation is planned to become the default in a
-future compatibility-changing release; its major/minor version and migration timing remain
-undecided. This release keeps strict validation opt-in and preserves existing numeric totals.
+## Compatibility
+
+The upcoming **0.2.0** minor release makes the strict accounting introduced as an opt-in in 0.1.6
+mandatory. This is a breaking change for manually constructed cache-bearing usage that omits
+`uncachedInputTokens`, including zero-valued cache fields. The reported
+`{ inputTokens: 1000, outputTokens: 50, cachedInputTokens: 400 }` now throws instead of returning
+`$0.00114` with an `AMBIGUOUS_CACHED_INPUT` warning. Normalize the original provider payload or
+supply the explicit count before estimating or tallying. Calls already using normalized provider
+usage or explicit uncached counts retain their totals.
+
+`requireExplicitUncachedInputTokens` remains accepted on both functions as a **deprecated no-op
+alias**. Remove it from new code: omitted, `true`, and `false` all enforce the same validation;
+`false` cannot restore the old arithmetic. Ambiguity warnings are no longer emitted. The exported
+`TokenUsageWarning` type and optional `warnings` result fields remain as deprecated declarations
+for source compatibility; migrate warning handling to error handling for invalid usage.
 
 ## Load catalog pricing in Node.js
 

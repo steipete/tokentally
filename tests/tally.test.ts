@@ -1,4 +1,5 @@
 import { estimateUsdCost, pricingFromUsdPerMillion, tallyCosts } from "../src/index.js";
+import type { TokenUsageNormalized } from "../src/index.js";
 import { normalizeTokenUsage } from "../src/usage.js";
 
 describe("explicit uncached input validation", () => {
@@ -7,7 +8,12 @@ describe("explicit uncached input validation", () => {
     outputUsdPerMillion: 2,
     cachedInputUsdPerMillion: 0.1,
   });
-  const direct = { inputTokens: 1000, outputTokens: 50, cachedInputTokens: 400 };
+  // Bypass the public type to exercise JavaScript and external-data callers.
+  const direct = {
+    inputTokens: 1000,
+    outputTokens: 50,
+    cachedInputTokens: 400,
+  } as TokenUsageNormalized;
   const explicit = { ...direct, uncachedInputTokens: 600 };
   const openai = normalizeTokenUsage({
     prompt_tokens: 1000,
@@ -21,31 +27,19 @@ describe("explicit uncached input validation", () => {
   });
   const error = /normalizeTokenUsage\(\).*explicit uncachedInputTokens/;
 
-  it("preserves the ambiguous default estimate with one actionable structured warning", () => {
-    for (let invocation = 0; invocation < 2; invocation++) {
-      const cost = estimateUsdCost({ usage: direct, pricing });
-      expect(cost?.totalUsd).toBeCloseTo(0.00114, 12);
-      expect(cost?.warnings).toEqual([
-        { code: "AMBIGUOUS_CACHED_INPUT", message: expect.stringMatching(error) },
-      ]);
-    }
-    expect(
-      estimateUsdCost({ usage: direct, pricing, requireExplicitUncachedInputTokens: false }),
-    ).toEqual(estimateUsdCost({ usage: direct, pricing }));
-  });
+  it.each([undefined, false, true])(
+    "rejects ambiguous estimates with the deprecated flag set to %s",
+    (flag) => {
+      const estimate = () =>
+        estimateUsdCost({ usage: direct, pricing, requireExplicitUncachedInputTokens: flag });
+      expect(estimate).toThrow(TypeError);
+      expect(estimate).toThrow(error);
+    },
+  );
 
-  it("rejects ambiguous direct estimates in strict mode", () => {
-    expect(() =>
-      estimateUsdCost({ usage: direct, pricing, requireExplicitUncachedInputTokens: true }),
-    ).toThrow(TypeError);
-    expect(() =>
-      estimateUsdCost({ usage: direct, pricing, requireExplicitUncachedInputTokens: true }),
-    ).toThrow(error);
-  });
-
-  it.each([false, true])(
-    "prices explicit and provider-normalized input in strict=%s",
-    async (strict) => {
+  it.each([undefined, false, true])(
+    "prices explicit and provider-normalized input with the deprecated flag set to %s",
+    async (flag) => {
       for (const [usage, expected] of [
         [explicit, 0.00074],
         [openai, 0.00074],
@@ -54,14 +48,14 @@ describe("explicit uncached input validation", () => {
         const cost = estimateUsdCost({
           usage,
           pricing,
-          requireExplicitUncachedInputTokens: strict,
+          requireExplicitUncachedInputTokens: flag,
         });
         expect(cost?.totalUsd).toBeCloseTo(expected, 12);
         expect(cost).not.toHaveProperty("warnings");
         const result = await tallyCosts({
           calls: [{ model: "example/model", usage }],
           resolvePricing: () => pricing,
-          requireExplicitUncachedInputTokens: strict,
+          requireExplicitUncachedInputTokens: flag,
         });
         expect(result.total?.totalUsd).toBeCloseTo(expected, 12);
         expect(result).not.toHaveProperty("warnings");
@@ -69,93 +63,86 @@ describe("explicit uncached input validation", () => {
     },
   );
 
-  it("warns for direct tallies and rejects them in strict mode", async () => {
-    const calls = [{ model: "example/model", usage: direct }];
-    const result = await tallyCosts({ calls, resolvePricing: () => pricing });
-    expect(result.total?.totalUsd).toBeCloseTo(0.00114, 12);
-    expect(result.warnings).toHaveLength(1);
-    await expect(
-      tallyCosts({
-        calls,
-        resolvePricing: () => pricing,
-        requireExplicitUncachedInputTokens: true,
-      }),
-    ).rejects.toThrow(error);
-  });
+  it.each([undefined, false, true])(
+    "rejects direct tallies with the deprecated flag set to %s",
+    async (flag) => {
+      await expect(
+        tallyCosts({
+          calls: [{ model: "example/model", usage: direct }],
+          resolvePricing: () => pricing,
+          requireExplicitUncachedInputTokens: flag,
+        }),
+      ).rejects.toThrow(error);
+    },
+  );
 
   it.each([false, true])(
-    "detects mixed input before aggregation, reversed=%s",
+    "rejects mixed input before aggregation or pricing, reversed=%s",
     async (reversed) => {
       const calls = [direct, openai].map((usage) => ({ model: "example/model", usage }));
       if (reversed) calls.reverse();
-      const result = await tallyCosts({ calls, resolvePricing: () => pricing });
-      expect(result.total?.totalUsd).toBeCloseTo(0.00188, 12);
-      expect(result.warnings?.map((warning) => warning.code)).toEqual(["AMBIGUOUS_CACHED_INPUT"]);
       const resolvePricing = vi.fn(() => pricing);
-      await expect(
-        tallyCosts({
-          calls,
-          resolvePricing,
-          requireExplicitUncachedInputTokens: true,
-        }),
-      ).rejects.toThrow(error);
+      await expect(tallyCosts({ calls, resolvePricing })).rejects.toThrow(error);
       expect(resolvePricing).not.toHaveBeenCalled();
       const corrected = await tallyCosts({
         calls: [explicit, openai].map((usage) => ({ model: "example/model", usage })),
         resolvePricing,
-        requireExplicitUncachedInputTokens: true,
       });
       expect(corrected.total?.totalUsd).toBeCloseTo(0.00148, 12);
       expect(corrected).not.toHaveProperty("warnings");
     },
   );
 
-  it("deduplicates warnings across calls and models even without pricing", async () => {
-    const result = await tallyCosts({
-      calls: ["a", "a", "b"].map((model) => ({ model, usage: direct })),
-      resolvePricing: () => null,
-    });
-    expect(result.total).toBeNull();
-    expect(result.warnings).toHaveLength(1);
-    expect(result.byModel.a?.calls).toBe(2);
+  it("rejects ambiguous calls even without pricing", async () => {
+    const resolvePricing = vi.fn(() => null);
+    await expect(
+      tallyCosts({
+        calls: ["a", "a", "b"].map((model) => ({ model, usage: direct })),
+        resolvePricing,
+      }),
+    ).rejects.toThrow(error);
+    expect(resolvePricing).not.toHaveBeenCalled();
   });
+
+  it.each([false, true])(
+    "combines cache-free and normalized usage, reversed=%s",
+    async (reversed) => {
+      const calls = [openai, { inputTokens: 1000, outputTokens: 50 }].map((usage) => ({
+        model: "example/model",
+        usage,
+      }));
+      if (reversed) calls.reverse();
+      const result = await tallyCosts({ calls, resolvePricing: () => pricing });
+      expect(result.total?.totalUsd).toBeCloseTo(0.00184, 12);
+      expect(result.byModel["example/model"]?.usage.uncachedInputTokens).toBe(1600);
+      expect(result.byModel["example/model"]?.usage.cachedInputTokens).toBe(400);
+    },
+  );
 
   it.each([
     { cachedInputTokens: 0 },
     { cacheCreationInputTokens: 0 },
     { cacheCreationInputTokens: 400 },
-  ])("validates present cache fields %j and accepts explicit zero uncached input", (cache) => {
-    const usage = { inputTokens: 0, outputTokens: 0, ...cache };
-    expect(estimateUsdCost({ usage, pricing })?.warnings).toHaveLength(1);
-    expect(() =>
-      estimateUsdCost({ usage, pricing, requireExplicitUncachedInputTokens: true }),
-    ).toThrow(error);
-    expect(
-      estimateUsdCost({
-        usage: { ...usage, uncachedInputTokens: 0 },
-        pricing,
-        requireExplicitUncachedInputTokens: true,
-      }),
-    ).not.toHaveProperty("warnings");
-  });
+    { cachedInputTokens: 400, cacheCreationInputTokens: 200 },
+  ])(
+    "validates present cache fields %j and accepts explicit zero uncached input",
+    async (cache) => {
+      const usage = { inputTokens: 0, outputTokens: 0, ...cache } as TokenUsageNormalized;
+      expect(() => estimateUsdCost({ usage, pricing })).toThrow(error);
+      await expect(
+        tallyCosts({ calls: [{ model: "example/model", usage }], resolvePricing: () => pricing }),
+      ).rejects.toThrow(error);
+      expect(
+        estimateUsdCost({ usage: { ...usage, uncachedInputTokens: 0 }, pricing }),
+      ).not.toHaveProperty("warnings");
+    },
+  );
 
-  it("keeps missing-data defaults and validates strict input before missing pricing", () => {
-    expect(estimateUsdCost({ usage: direct, pricing: null })).toBeNull();
-    expect(
-      estimateUsdCost({ usage: null, pricing, requireExplicitUncachedInputTokens: true }),
-    ).toBeNull();
-    expect(() =>
-      estimateUsdCost({
-        usage: direct,
-        pricing: null,
-        requireExplicitUncachedInputTokens: true,
-      }),
-    ).toThrow(error);
-    const cost = estimateUsdCost({
-      usage: { inputTokens: 1000, outputTokens: 50 },
-      pricing,
-      requireExplicitUncachedInputTokens: true,
-    });
+  it("keeps missing-data defaults and validates input before missing pricing", () => {
+    expect(estimateUsdCost({ usage: null, pricing })).toBeNull();
+    expect(estimateUsdCost({ usage: explicit, pricing: null })).toBeNull();
+    expect(() => estimateUsdCost({ usage: direct, pricing: null })).toThrow(error);
+    const cost = estimateUsdCost({ usage: { inputTokens: 1000, outputTokens: 50 }, pricing });
     expect(cost?.inputUsd).toBeCloseTo(0.001, 12);
     expect(cost?.outputUsd).toBeCloseTo(0.0001, 12);
     expect(cost?.totalUsd).toBeCloseTo(0.0011, 12);
