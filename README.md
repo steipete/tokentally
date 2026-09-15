@@ -157,7 +157,10 @@ for source compatibility; migrate warning handling to error handling for invalid
 Import catalog helpers from `tokentally/node`. The LiteLLM loader uses a seven-day disk cache at
 `$HOME/.tokentally/cache`; set `TOKENTALLY_CACHE_DIR` to put it elsewhere. Disk caching is optional:
 when no cache directory is configured or saving fails, a successful fetch still returns network
-pricing. Failed refreshes fall back to a readable cached catalog.
+pricing. Failed refreshes fall back to a usable cached catalog. Empty responses and objects
+without any model row containing a valid token rate or limit are rejected, so an upstream JSON
+error cannot replace working pricing or postpone the next refresh. LiteLLM's `sample_spec`
+metadata does not count as a model; partial model rows and extension data remain intact.
 
 ```js
 import { loadLiteLlmCatalog, resolveLiteLlmPricing } from "tokentally/node";

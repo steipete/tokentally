@@ -110,7 +110,22 @@ function isStale(meta: CacheMeta | null, nowMs: number): boolean {
 
 function parseCatalog(raw: unknown): LiteLlmCatalog | null {
   if (!isRecord(raw)) return null;
-  return raw as LiteLlmCatalog;
+  // JSON error objects and empty/truncated catalogs must not replace usable disk pricing.
+  const hasModelData = Object.entries(raw).some(([key, row]) => {
+    if (key === "sample_spec" || !isRecord(row)) return false;
+    return (
+      [
+        row.input_cost_per_token,
+        row.output_cost_per_token,
+        row.cache_read_input_token_cost,
+        row.cache_creation_input_token_cost,
+      ].some((value) => typeof value === "number" && Number.isFinite(value) && value >= 0) ||
+      [row.max_input_tokens, row.max_output_tokens, row.max_tokens].some(
+        (value) => toFinitePositiveInt(value) !== null,
+      )
+    );
+  });
+  return hasModelData ? (raw as LiteLlmCatalog) : null;
 }
 
 /** Result of `loadLiteLlmCatalog()` including the cache/network source. */

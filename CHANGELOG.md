@@ -2,6 +2,7 @@
 
 ## 0.2.0 (Unreleased)
 
+- Node helpers: reject unusable LiteLLM catalog objects before caching so malformed refreshes preserve working pricing and remain retryable
 - Core API: require explicit uncached counts for cache-bearing usage in types, estimates, and tallies by default, preventing ambiguous cached-token double billing; normalize original provider payloads with `normalizeTokenUsage()` (thanks @devYRPauli for the report)
 
 ### Compatibility
