@@ -252,3 +252,88 @@ describe("LiteLLM optional disk cache", () => {
     ).toEqual({ catalog: null, source: "none" });
   });
 });
+
+const malformedCatalogs = [
+  {},
+  { error: "temporary upstream failure" },
+  { error: { message: "temporary upstream failure" } },
+  { model: null },
+  { model: [] },
+  { model: { input_cost_per_token: "invalid", max_tokens: -1 } },
+  { sample_spec: { input_cost_per_token: 0, output_cost_per_token: 0 } },
+];
+
+describe("LiteLLM catalog validation", () => {
+  it.each(malformedCatalogs)(
+    "preserves stale pricing after an unusable refresh %j",
+    async (body) => {
+      const directory = await cacheDirectory();
+      await seedCache(directory);
+      const env = { TOKENTALLY_CACHE_DIR: directory };
+      const originalCatalog = await fs.readFile(path.join(directory, catalogFile), "utf8");
+      const originalMeta = await fs.readFile(path.join(directory, metaFile), "utf8");
+      expect(
+        await loadLiteLlmCatalog({
+          env,
+          nowMs: staleTime,
+          fetchImpl: async () => Response.json(body, { headers: { etag: '"broken"' } }),
+        }),
+      ).toEqual({ catalog, source: "cache" });
+      expect(await fs.readFile(path.join(directory, catalogFile), "utf8")).toBe(originalCatalog);
+      expect(await fs.readFile(path.join(directory, metaFile), "utf8")).toBe(originalMeta);
+      const fetchImpl = vi.fn(async () => Response.json(catalog));
+      expect(await loadLiteLlmCatalog({ env, nowMs: staleTime + 1, fetchImpl })).toEqual({
+        catalog,
+        source: "network",
+      });
+      expect(fetchImpl).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(malformedCatalogs)("does not cache unusable first responses %j", async (body) => {
+    const directory = await cacheDirectory();
+    expect(
+      await loadLiteLlmCatalog({
+        env: { TOKENTALLY_CACHE_DIR: directory },
+        fetchImpl: async () => Response.json(body),
+      }),
+    ).toEqual({ catalog: null, source: "none" });
+    expect(await fs.readdir(directory)).toEqual([]);
+  });
+
+  it.each(malformedCatalogs)("refetches unusable legacy cache contents %j", async (body) => {
+    const directory = await cacheDirectory();
+    await fs.writeFile(path.join(directory, catalogFile), JSON.stringify(body));
+    await fs.writeFile(path.join(directory, metaFile), JSON.stringify({ fetchedAtMs: 1 }));
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.headers).toEqual({});
+      return Response.json(catalog);
+    });
+    expect(
+      await loadLiteLlmCatalog({ env: { TOKENTALLY_CACHE_DIR: directory }, nowMs: 2, fetchImpl }),
+    ).toEqual({ catalog, source: "network" });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { embedding: { input_cost_per_token: 1e-6 } },
+    { free: { input_cost_per_token: 0, output_cost_per_token: 0 } },
+    { limits: { max_input_tokens: "8192" } },
+    { limits: { max_output_tokens: 1024 } },
+    { limits: { max_tokens: "4096" } },
+    { ...catalog, extension: { custom: true }, sample_spec: { input_cost_per_token: 0 } },
+  ])("retains partial model rows and extension data %j", async (body) => {
+    const directory = await cacheDirectory();
+    const env = { TOKENTALLY_CACHE_DIR: directory };
+    const fetchImpl = vi.fn(async () => Response.json(body));
+    expect(await loadLiteLlmCatalog({ env, fetchImpl, nowMs: 1 })).toEqual({
+      catalog: body,
+      source: "network",
+    });
+    expect(await loadLiteLlmCatalog({ env, fetchImpl, nowMs: 2 })).toEqual({
+      catalog: body,
+      source: "cache",
+    });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+});
