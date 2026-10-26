@@ -2,6 +2,7 @@
 
 ## 0.2.0 (Unreleased)
 
+- Tooling: refresh compatible build, lint, test, and package-validation dependencies while retaining Node 24 types, pnpm 11, and the 48-hour release cooldown (#63, thanks @dependabot[bot])
 - Tooling: update Node 24 types, Vitest and coverage, Oxfmt, Oxlint, PostCSS, tsdown, and Vite with their transitive dependencies (thanks @dependabot[bot])
 - Tooling: update Vite to 8.3.3, pnpm 11 to 11.28.5, and all source-map-js paths to 1.2.2 to fix a development-tool denial of service, retaining the two-day dependency cooldown (thanks @dependabot[bot])
 
