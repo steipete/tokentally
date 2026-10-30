@@ -45,7 +45,7 @@
     "@types/node": "^24.19.2",
     "@typescript/native": "npm:typescript@^7.0.2",
     "@vitest/coverage-v8": "^5.0.5",
-    "oxfmt": "^0.74.0",
+    "oxfmt": "^0.75.0",
     "oxlint": "^1.89.0",
     "oxlint-tsgolint": "^7.0.2005",
     "postcss": "^8.5.31",
