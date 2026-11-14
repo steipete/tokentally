@@ -2,6 +2,8 @@
 
 ## 0.2.0 (Unreleased)
 
+- Tooling: refresh Oxfmt, Oxlint, type-aware linting, tsdown, Vite, and compatible transitive dependencies while retaining pnpm 11, Node 24 types, and the 48-hour cooldown (#66, thanks @dependabot[bot])
+
 - Tooling: refresh Vitest, tsdown, Oxfmt, Oxlint, PostCSS, and compatible transitive dependencies while retaining Node 24 types, pnpm 11, and the 48-hour cooldown (#64, thanks @dependabot[bot])
 - Tooling: refresh compatible build, lint, test, and package-validation dependencies while retaining Node 24 types, pnpm 11, and the 48-hour release cooldown (#63, thanks @dependabot[bot])
 - Tooling: update Node 24 types, Vitest and coverage, Oxfmt, Oxlint, PostCSS, tsdown, and Vite with their transitive dependencies (thanks @dependabot[bot])
